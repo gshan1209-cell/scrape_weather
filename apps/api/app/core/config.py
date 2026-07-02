@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./weather.db"
     CACHE_TTL_MINUTES: int = 180
     CORS_ORIGINS: str = Field(default="http://localhost:3000")
+    ENABLE_WINDY_POINT_FORECAST: bool = False
+    WINDY_POINT_FORECAST_API_KEY: str | None = None
 
     @property
     def cors_origin_list(self) -> list[str]:

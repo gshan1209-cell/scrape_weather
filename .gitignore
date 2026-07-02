@@ -7,6 +7,7 @@ weather.db
 
 node_modules/
 .next/
+.next-verify/
 out/
 dist/
 npm-debug.log*

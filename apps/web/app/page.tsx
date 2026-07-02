@@ -7,6 +7,7 @@ import { CropSelector } from "@/components/farmer/CropSelector";
 import { FarmerAdviceCard } from "@/components/farmer/FarmerAdviceCard";
 import { WorkSuggestionCard } from "@/components/farmer/WorkSuggestionCard";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { WeatherMapShell } from "@/components/map/WeatherMapShell";
 import { CurrentWeatherCard } from "@/components/weather/CurrentWeatherCard";
 import { WeeklyForecastCard } from "@/components/weather/WeeklyForecastCard";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,8 @@ export default function HomePage() {
       {(weather.error || advisory.error) && (
         <AlertBanner level="warning" title="API connection issue" message="The web app could not reach one of the API endpoints." />
       )}
+
+      <WeatherMapShell city={city} district={district} crop={crop} advisory={advisory.data} />
 
       <section className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
         <CurrentWeatherCard day={firstDay} loading={weather.loading} source={weather.data?.source} />
