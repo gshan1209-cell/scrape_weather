@@ -6,16 +6,23 @@ export function FarmerAdviceCard({ advisory, loading }: { advisory?: WeeklyAdvis
   return (
     <Card>
       <div className="flex items-center justify-between gap-3">
-        <div className="text-sm font-semibold text-stone-500">Farmer advisory</div>
-        {advisory && <Badge tone={advisory.riskLevel}>{advisory.riskLevel}</Badge>}
+        <div className="text-sm font-semibold text-stone-500">農事提醒</div>
+        {advisory && <Badge tone={advisory.riskLevel}>{riskLabel(advisory.riskLevel)}</Badge>}
       </div>
       {loading ? (
-        <div className="mt-4 text-sm text-stone-500">Building advice...</div>
+        <div className="mt-4 text-sm text-stone-500">正在產生建議...</div>
       ) : advisory ? (
         <p className="mt-4 text-lg font-medium leading-7 text-stone-900">{advisory.summary}</p>
       ) : (
-        <div className="mt-4 text-sm text-stone-500">No advisory loaded.</div>
+        <div className="mt-4 text-sm text-stone-500">尚無農事提醒。</div>
       )}
     </Card>
   );
+}
+
+function riskLabel(level: string) {
+  if (level === "danger") return "高風險";
+  if (level === "warning") return "注意";
+  if (level === "normal") return "正常";
+  return level;
 }

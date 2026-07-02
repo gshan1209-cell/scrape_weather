@@ -59,7 +59,7 @@ class WeatherService:
                 if not start:
                     continue
                 date = start[:10]
-                bucket = by_date.setdefault(date, {"date": date, "weather": "Weather data available"})
+                bucket = by_date.setdefault(date, {"date": date, "weather": "已有天氣資料"})
                 bucket["rawTimeRange"] = self._time_range(item)
                 value = self._extract_value(item)
                 self._apply_element(bucket, name, value)
@@ -105,13 +105,13 @@ class WeatherService:
     def _mock_weather(self, city: str, district: str | None) -> WeeklyWeatherResponse:
         today = datetime.now(TAIPEI_TZ)
         patterns = [
-            ("Hot with afternoon thunderstorms", 26, 36, 70, 8),
-            ("Cloudy and humid", 25, 33, 45, 6),
-            ("Showers likely", 24, 31, 75, 4),
-            ("Partly sunny", 25, 34, 30, 7),
-            ("Warm with scattered rain", 26, 35, 60, 8),
-            ("Cloudy", 24, 32, 40, 5),
-            ("Sunny and hot", 26, 36, 20, 9),
+            ("高溫炎熱，午後有雷陣雨", 26, 36, 70, 8),
+            ("多雲悶熱", 25, 33, 45, 6),
+            ("短暫陣雨機率高", 24, 31, 75, 4),
+            ("晴時多雲", 25, 34, 30, 7),
+            ("溫暖，局部短暫雨", 26, 35, 60, 8),
+            ("多雲", 24, 32, 40, 5),
+            ("晴朗炎熱", 26, 36, 20, 9),
         ]
         days = []
         for offset, (weather, min_temp, max_temp, rain, uv) in enumerate(patterns):
@@ -123,9 +123,9 @@ class WeatherService:
                     minTemp=min_temp,
                     maxTemp=max_temp,
                     rainProbability=rain,
-                    comfort="Humid",
+                    comfort="悶熱",
                     uvIndex=uv,
-                    windDescription="Light to moderate breeze",
+                    windDescription="微風至和緩風",
                     rawTimeRange=f"{day.date().isoformat()}T06:00:00+08:00/{day.date().isoformat()}T18:00:00+08:00",
                 )
             )
@@ -133,6 +133,6 @@ class WeatherService:
             city=city,
             district=district,
             updatedAt=today.isoformat(),
-            source="Mock Weather Data",
+            source="模擬天氣資料",
             days=days,
         )

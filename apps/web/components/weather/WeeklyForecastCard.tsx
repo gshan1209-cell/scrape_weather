@@ -5,9 +5,9 @@ import { DailyWeather } from "@/features/weather/types";
 export function WeeklyForecastCard({ days, loading }: { days: DailyWeather[]; loading: boolean }) {
   return (
     <Card>
-      <div className="text-sm font-semibold text-stone-500">Weekly forecast</div>
+      <div className="text-sm font-semibold text-stone-500">一週預報</div>
       {loading ? (
-        <div className="mt-4 text-sm text-stone-500">Loading week...</div>
+        <div className="mt-4 text-sm text-stone-500">正在載入一週資料...</div>
       ) : days.length ? (
         <div className="mt-2">
           {days.map((day) => (
@@ -15,7 +15,7 @@ export function WeeklyForecastCard({ days, loading }: { days: DailyWeather[]; lo
           ))}
         </div>
       ) : (
-        <div className="mt-4 text-sm text-stone-500">No weekly data available.</div>
+        <div className="mt-4 text-sm text-stone-500">尚無一週預報資料。</div>
       )}
     </Card>
   );

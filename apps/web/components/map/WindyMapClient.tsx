@@ -11,10 +11,11 @@ type Props = {
   config: WeatherMapConfig;
   city: string;
   district?: string;
+  crop?: string;
   advisory?: WeeklyAdvisoryResponse;
 };
 
-export function WindyMapClient({ config, city, district, advisory }: Props) {
+export function WindyMapClient({ config, city, district, crop, advisory }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [windyLoaded, setWindyLoaded] = useState(false);
@@ -43,7 +44,7 @@ export function WindyMapClient({ config, city, district, advisory }: Props) {
   }, [leafletLoaded, windyLoaded, config]);
 
   if (failed) {
-    return <MapProviderFallback reason="Windy map failed to load." config={config} city={city} district={district} />;
+    return <MapProviderFallback reason="Windy 地圖載入失敗，已自動改用 Leaflet 模擬地圖。" config={config} city={city} district={district} crop={crop} advisory={advisory} />;
   }
 
   return (
@@ -61,7 +62,7 @@ export function WindyMapClient({ config, city, district, advisory }: Props) {
         onError={() => setFailed(true)}
       />
 
-      <div id="windy" ref={containerRef} className="h-[420px] w-full md:h-[520px]" />
+      <div id="windy" ref={containerRef} className="h-[520px] min-h-[70vh] w-full" />
       <MapFloatingAdvice advisory={advisory} />
     </section>
   );

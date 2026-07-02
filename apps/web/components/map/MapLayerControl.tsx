@@ -1,6 +1,6 @@
 "use client";
 
-import { Cloud, CloudRain, Gauge, ThermometerSun, Wind } from "lucide-react";
+import { CloudRain, ThermometerSun, Wind } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WEATHER_OVERLAY_OPTIONS } from "@/features/weather-map/overlay-options";
 import type { WeatherOverlay } from "@/features/weather-map/types";
@@ -10,8 +10,6 @@ const icons = {
   rain: CloudRain,
   wind: Wind,
   temperature: ThermometerSun,
-  clouds: Cloud,
-  pressure: Gauge,
 };
 
 type Props = {
@@ -23,7 +21,7 @@ export function MapLayerControl({ value, onChange }: Props) {
   return (
     <div className="absolute right-3 top-3 flex max-w-[calc(100%-1.5rem)] flex-wrap justify-end gap-2 rounded-md bg-black/35 p-2 backdrop-blur">
       {WEATHER_OVERLAY_OPTIONS.map((option) => {
-        const Icon = icons[option.value];
+        const Icon = icons[option.value as keyof typeof icons];
         return (
           <Button
             key={option.value}

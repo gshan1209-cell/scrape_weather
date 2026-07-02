@@ -6,4 +6,4 @@
 4. If live data is unavailable, the API returns deterministic mock data.
 5. Weather data is normalized into a stable response schema.
 6. Advisory rules generate heat, rain, cold, and wind alerts.
-7. The frontend renders a weather map hero. The default mock provider uses local UI state only; the optional Windy provider loads third-party scripts in the browser and falls back safely on errors.
+7. The frontend renders a Leaflet + OpenStreetMap weather map hero. The default mock provider uses local overlay state only; the optional Windy provider loads third-party scripts in the browser and falls back safely on errors.

@@ -19,7 +19,7 @@ export function MapTimeline({ labels, value, isPlaying, onChange, onPlayToggle }
           {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </Button>
         <input
-          aria-label="Forecast time"
+          aria-label="預報時間"
           className="h-2 min-w-0 flex-1 accent-white"
           type="range"
           min={0}
@@ -27,7 +27,7 @@ export function MapTimeline({ labels, value, isPlaying, onChange, onPlayToggle }
           value={value}
           onChange={(event) => onChange(Number(event.target.value))}
         />
-        <span className="w-10 text-right text-sm font-semibold">{labels[value]}</span>
+        <span className="w-16 text-right text-sm font-semibold">{labels[value]}</span>
       </div>
       <div className="mt-2 hidden grid-cols-10 text-[10px] text-white/60 sm:grid">
         {labels.map((label) => (

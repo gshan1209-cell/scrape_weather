@@ -5,9 +5,7 @@ export const WEATHER_OVERLAY_OPTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  { value: "rain", label: "Rain", description: "Precipitation bands and field drainage risk" },
-  { value: "wind", label: "Wind", description: "Surface wind flow and gust exposure" },
-  { value: "temperature", label: "Temperature", description: "Heat stress and cool pocket signals" },
-  { value: "clouds", label: "Clouds", description: "Cloud cover and changing sky conditions" },
-  { value: "pressure", label: "Pressure", description: "Pressure pattern and frontal movement" },
+  { value: "rain", label: "降雨", description: "降雨帶與田區排水風險" },
+  { value: "temperature", label: "溫度", description: "高溫熱害與低溫區訊號" },
+  { value: "wind", label: "風速", description: "近地面風速與設施受風風險" },
 ];

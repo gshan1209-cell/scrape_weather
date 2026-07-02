@@ -2,9 +2,9 @@ import { CloudSun, Home, Settings } from "lucide-react";
 import Link from "next/link";
 
 const items = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/forecast", label: "Forecast", icon: CloudSun },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/", label: "首頁", icon: Home },
+  { href: "/forecast", label: "預報", icon: CloudSun },
+  { href: "/settings", label: "設定", icon: Settings },
 ];
 
 export function BottomNav() {

@@ -6,9 +6,9 @@ export function AppHeader() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2 font-semibold text-stone-900">
           <Sprout className="h-5 w-5 text-field" />
-          Weather Farmer
+          農事天氣
         </div>
-        <span className="text-xs font-medium text-stone-500">CWA MVP</span>
+        <span className="text-xs font-medium text-stone-500">CWA 開放資料 MVP</span>
       </div>
     </header>
   );

@@ -5,12 +5,21 @@ export function MapFloatingAdvice({ advisory, crop }: { advisory?: WeeklyAdvisor
   return (
     <div className="absolute bottom-24 right-3 max-w-xs rounded-md bg-white/95 p-4 text-stone-900 shadow-sm backdrop-blur md:bottom-20">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-sm font-semibold">Field signal</div>
-        <Badge tone={advisory?.riskLevel ?? "info"}>{advisory?.riskLevel ?? "loading"}</Badge>
+        <div className="text-sm font-semibold">田間訊號</div>
+        <Badge tone={advisory?.riskLevel ?? "info"}>{riskLabel(advisory?.riskLevel)}</Badge>
       </div>
       <p className="mt-2 line-clamp-3 text-sm leading-6 text-stone-700">
-        {advisory?.summary ?? `Loading weekly risk guidance${crop ? ` for ${crop}` : ""}.`}
+        {advisory?.summary ?? `正在載入${crop ? crop : "作物"}的一週風險提醒。`}
       </p>
     </div>
   );
+}
+
+function riskLabel(level?: string) {
+  if (!level) return "載入中";
+  if (level === "danger") return "高風險";
+  if (level === "warning") return "注意";
+  if (level === "normal") return "正常";
+  if (level === "info") return "資訊";
+  return level;
 }

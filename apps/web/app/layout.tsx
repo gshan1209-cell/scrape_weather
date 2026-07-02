@@ -4,8 +4,8 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 
 export const metadata: Metadata = {
-  title: "Weather Farmer",
-  description: "CWA weather and farmer advisory dashboard",
+  title: "農事天氣儀表板",
+  description: "CWA 天氣與農事提醒儀表板",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

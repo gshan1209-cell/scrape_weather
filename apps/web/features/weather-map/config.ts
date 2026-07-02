@@ -12,7 +12,7 @@ export function getWeatherMapConfig(): WeatherMapConfig {
     defaultLon: toNumber(process.env.NEXT_PUBLIC_WINDY_DEFAULT_LON, 120.9605),
     defaultZoom: toNumber(process.env.NEXT_PUBLIC_WINDY_DEFAULT_ZOOM, 7),
     defaultOverlay,
-    windyApiKey: process.env.NEXT_PUBLIC_WINDY_MAP_API_KEY || undefined,
+    windyApiKey: process.env.NEXT_PUBLIC_WINDY_API_KEY || process.env.NEXT_PUBLIC_WINDY_MAP_API_KEY || undefined,
   };
 }
 

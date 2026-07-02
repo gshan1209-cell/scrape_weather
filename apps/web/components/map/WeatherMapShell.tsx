@@ -2,7 +2,7 @@
 
 import { WeeklyAdvisoryResponse } from "@/features/advisory/types";
 import { getWeatherMapConfig } from "@/features/weather-map/config";
-import { WindyInspiredMap } from "./WindyInspiredMap";
+import { LeafletWeatherMap } from "./LeafletWeatherMap";
 import { WindyMapClient } from "./WindyMapClient";
 
 type Props = {
@@ -16,8 +16,8 @@ export function WeatherMapShell({ city, district, crop, advisory }: Props) {
   const config = getWeatherMapConfig();
 
   if (config.provider === "windy" && config.windyApiKey) {
-    return <WindyMapClient config={config} city={city} district={district} advisory={advisory} />;
+    return <WindyMapClient config={config} city={city} district={district} crop={crop} advisory={advisory} />;
   }
 
-  return <WindyInspiredMap config={config} city={city} district={district} crop={crop} advisory={advisory} />;
+  return <LeafletWeatherMap config={config} city={city} district={district} crop={crop} advisory={advisory} />;
 }

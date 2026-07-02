@@ -17,15 +17,15 @@ import { useLocations } from "@/features/location/hooks";
 import { useWeeklyWeather } from "@/features/weather/hooks";
 
 export default function HomePage() {
-  const [city, setCity] = useState("Taipei");
-  const [district, setDistrict] = useState("Beitou");
-  const [crop, setCrop] = useState("rice");
+  const [city, setCity] = useState("臺北市");
+  const [district, setDistrict] = useState("北投區");
+  const [crop, setCrop] = useState("水稻");
   const weather = useWeeklyWeather(city, district);
   const advisory = useWeeklyAdvisory(city, district, crop);
   const locations = useLocations();
 
   const districts = useMemo(() => {
-    return locations.data?.locations.find((item) => item.city === city)?.districts ?? ["Beitou"];
+    return locations.data?.locations.find((item) => item.city === city)?.districts ?? ["北投區"];
   }, [city, locations.data]);
 
   function handleCity(value: string) {
@@ -42,26 +42,26 @@ export default function HomePage() {
         <div className="rounded-md bg-field p-5 text-white shadow-sm">
           <div className="flex items-center gap-2 text-sm font-medium opacity-90">
             <CloudSun className="h-4 w-4" />
-            CWA OpenData farm weather
+            CWA 開放資料農事天氣
           </div>
           <h1 className="mt-3 max-w-2xl text-3xl font-semibold tracking-normal md:text-4xl">
-            Weekly field decisions, grounded in weather risk.
+            用一週天氣風險安排田間工作。
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Select a production area and crop to review heat, rain, wind, and work timing for the week ahead.
+            選擇地區與作物，快速掌握高溫、降雨、風速與本週農事建議。
           </p>
         </div>
 
         <div className="rounded-md border border-stone-200 bg-white p-4 shadow-sm">
           <div className="grid gap-3 sm:grid-cols-3">
-            <Select label="City" value={city} onChange={(event) => handleCity(event.target.value)}>
-              {(locations.data?.locations ?? [{ city: "Taipei", districts: [] }]).map((item) => (
+            <Select label="縣市" value={city} onChange={(event) => handleCity(event.target.value)}>
+              {(locations.data?.locations ?? [{ city: "臺北市", districts: [] }]).map((item) => (
                 <option key={item.city} value={item.city}>
                   {item.city}
                 </option>
               ))}
             </Select>
-            <Select label="District" value={district} onChange={(event) => setDistrict(event.target.value)}>
+            <Select label="行政區" value={district} onChange={(event) => setDistrict(event.target.value)}>
               {districts.map((item) => (
                 <option key={item} value={item}>
                   {item}
@@ -72,13 +72,13 @@ export default function HomePage() {
           </div>
           <Button className="mt-4 w-full" onClick={() => { weather.reload(); advisory.reload(); locations.reload(); }}>
             <RefreshCw className="h-4 w-4" />
-            Refresh
+            重新整理
           </Button>
         </div>
       </section>
 
       {(weather.error || advisory.error) && (
-        <AlertBanner level="warning" title="API connection issue" message="The web app could not reach one of the API endpoints." />
+        <AlertBanner level="warning" title="API 連線異常" message="前端暫時無法連到其中一個後端 API。" />
       )}
 
       <WeatherMapShell city={city} district={district} crop={crop} advisory={advisory.data} />
@@ -97,7 +97,7 @@ export default function HomePage() {
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-stone-700">
             <AlertTriangle className="h-4 w-4 text-sun" />
-            Work suggestions
+            農事建議
           </div>
           {(advisory.data?.suggestions ?? []).map((item) => (
             <WorkSuggestionCard key={item} text={item} />

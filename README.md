@@ -1,24 +1,24 @@
-# Weather Farmer App
+# 農事天氣儀表板
 
-MVP monorepo for a Taiwan CWA OpenData weather dashboard with farmer-friendly weekly advice.
+這是一個以台灣 CWA OpenData 為核心的 MVP monorepo，提供一週天氣、農事風險提醒，以及 Leaflet + OpenStreetMap 天氣地圖。
 
-## Stack
+## 技術架構
 
-- `apps/api`: FastAPI, Pydantic, httpx, SQLAlchemy-ready models
-- `apps/web`: Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui-ready components
+- `apps/api`：FastAPI、Pydantic、httpx、SQLAlchemy-ready models
+- `apps/web`：Next.js App Router、TypeScript、Tailwind CSS、shadcn/ui-ready components
 
-## Setup
+## 環境設定
 
-Copy `.env.example` to `.env` and set `CWA_API_KEY` if you want live CWA data. Without a key, the API returns mock fallback data with the same response shape.
+複製 `.env.example` 為 `.env`，如果要讀取即時 CWA 資料，請設定 `CWA_API_KEY`。沒有 API key 時，後端會回傳固定 mock fallback 資料，JSON 格式與正式資料一致。
 
-Weather map provider modes:
+天氣地圖 provider：
 
-- `mock`: default, no third-party weather map API required.
-- `windy`: client-only Windy Map Forecast API skeleton. Requires `NEXT_PUBLIC_WEATHER_MAP_PROVIDER=windy` and a valid `NEXT_PUBLIC_WINDY_MAP_API_KEY`.
+- `mock`：預設模式，使用 Leaflet + OpenStreetMap 與 mock 天氣 overlay，不需要第三方天氣地圖 API。
+- `windy`：預留 Windy Map Forecast client-only skeleton。需設定 `NEXT_PUBLIC_WEATHER_MAP_PROVIDER=windy` 並提供有效的 `NEXT_PUBLIC_WINDY_API_KEY`。
 
-Do not use a Windy trial/testing key in production. Do not copy Windy branding or exact UI. CWA remains the main source for weekly forecasts and farmer advisory data.
+CWA 仍是本專案一週預報與農事提醒的主要資料來源。不要在正式環境使用 Windy trial/testing key，也不要複製 Windy 品牌或完整 UI。
 
-### API
+### 啟動 API
 
 ```powershell
 cd apps/api
@@ -28,7 +28,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Web
+### 啟動 Web
 
 ```powershell
 cd apps/web
@@ -36,20 +36,20 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+開啟 `http://localhost:3000`。
 
-## API
+## API 端點
 
 - `GET /api/v1/health`
 - `GET /api/v1/locations`
-- `GET /api/v1/weather/weekly?city=Taipei&district=Beitou`
-- `GET /api/v1/advisory/weekly?city=Taipei&district=Beitou&crop=rice`
+- `GET /api/v1/weather/weekly?city=臺北市&district=北投區`
+- `GET /api/v1/advisory/weekly?city=臺北市&district=北投區&crop=水稻`
 
-FastAPI docs are available at `http://localhost:8000/docs`.
+FastAPI 文件：`http://localhost:8000/docs`
 
-The backend also includes a disabled Windy Point Forecast client skeleton for future use. Enable it only with a valid `WINDY_POINT_FORECAST_API_KEY` and `ENABLE_WINDY_POINT_FORECAST=true`.
+後端也保留 Windy Point Forecast client skeleton，MVP 預設停用。未來若要啟用，需設定有效的 `WINDY_POINT_FORECAST_API_KEY` 與 `ENABLE_WINDY_POINT_FORECAST=true`。
 
-## Tests
+## 測試
 
 ```powershell
 cd apps/api
@@ -62,7 +62,8 @@ npm run lint
 npm run build
 ```
 
-## Security
+## 安全注意事項
 
-Keep the real CWA API key only in `.env`. The frontend uses `NEXT_PUBLIC_API_BASE_URL` and never receives the CWA key.
-Windy Map Forecast keys are browser-visible by design, so configure domain restrictions and usage limits in the Windy account before production use.
+請把真正的 CWA API key 放在 `.env`，不要提交到 Git。前端只會讀取 `NEXT_PUBLIC_API_BASE_URL`，不會取得 CWA key。
+
+Windy Map Forecast key 屬於前端可見金鑰；正式環境請在 Windy 帳號中設定網域限制與用量限制。MVP 預設地圖使用 OpenStreetMap 圖磚與 mock 天氣 overlay。
