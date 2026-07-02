@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+weather.db
+
+node_modules/
+.next/
+out/
+dist/
+npm-debug.log*
+.DS_Store
