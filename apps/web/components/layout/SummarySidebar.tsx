@@ -1,8 +1,9 @@
 "use client";
 
-import { AlertTriangle, CalendarDays, CloudRain, MapPin, ThermometerSun } from "lucide-react";
+import { AlertTriangle, CalendarDays, CheckCircle2, CloudRain, Map, MapPin, Server, ThermometerSun, WifiOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { WeeklyAdvisoryResponse } from "@/features/advisory/types";
+import type { HealthResponse } from "@/features/system/types";
 import type { DailyWeather } from "@/features/weather/types";
 
 type Props = {
@@ -14,10 +15,32 @@ type Props = {
   loading: boolean;
   updatedAt?: string;
   source?: string;
+  health?: HealthResponse;
+  healthLoading: boolean;
+  healthError?: Error;
+  mapMode: string;
+  weatherError?: Error;
+  advisoryError?: Error;
 };
 
-export function SummarySidebar({ city, district, crop, day, advisory, loading, updatedAt, source }: Props) {
+export function SummarySidebar({
+  city,
+  district,
+  crop,
+  day,
+  advisory,
+  loading,
+  updatedAt,
+  source,
+  health,
+  healthLoading,
+  healthError,
+  mapMode,
+  weatherError,
+  advisoryError,
+}: Props) {
   const riskLevel = advisory?.riskLevel ?? "info";
+  const apiOnline = health?.status === "ok" && !healthError;
 
   return (
     <aside className="lg:sticky lg:top-20">
@@ -39,6 +62,21 @@ export function SummarySidebar({ city, district, crop, day, advisory, loading, u
           <SummaryItem icon={ThermometerSun} label="溫度" value={day ? `${day.minTemp ?? "--"} / ${day.maxTemp ?? "--"} °C` : "--"} />
           <SummaryItem icon={CloudRain} label="降雨機率" value={day?.rainProbability == null ? "--" : `${day.rainProbability}%`} />
           <SummaryItem icon={AlertTriangle} label="提醒數" value={`${advisory?.alerts.length ?? 0} 則`} />
+        </div>
+
+        <div className="border-t border-stone-200 p-4">
+          <p className="text-xs font-medium text-stone-500">系統狀態</p>
+          <div className="mt-3 grid gap-2">
+            <StatusLine
+              icon={apiOnline ? CheckCircle2 : WifiOff}
+              label="API"
+              value={healthLoading ? "檢查中" : apiOnline ? `在線 v${health?.version}` : "離線"}
+              tone={apiOnline ? "normal" : "danger"}
+            />
+            <StatusLine icon={Map} label="地圖" value={mapMode} tone="info" />
+            <StatusLine icon={Server} label="預報" value={weatherError ? "讀取失敗" : day ? "已同步" : "等待資料"} tone={weatherError ? "danger" : "normal"} />
+            <StatusLine icon={AlertTriangle} label="提醒" value={advisoryError ? "讀取失敗" : advisory ? "已產生" : "等待資料"} tone={advisoryError ? "danger" : "normal"} />
+          </div>
         </div>
 
         <div className="border-t border-stone-200 p-4">
@@ -67,6 +105,18 @@ function SummaryItem({ icon: Icon, label, value }: { icon: typeof MapPin; label:
         <p className="text-xs font-medium text-stone-500">{label}</p>
         <p className="mt-0.5 truncate text-sm font-semibold text-stone-900">{value}</p>
       </div>
+    </div>
+  );
+}
+
+function StatusLine({ icon: Icon, label, value, tone }: { icon: typeof Server; label: string; value: string; tone: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-md bg-stone-50 px-3 py-2">
+      <div className="flex items-center gap-2 text-sm font-medium text-stone-700">
+        <Icon className="h-4 w-4 text-field" />
+        {label}
+      </div>
+      <Badge tone={tone}>{value}</Badge>
     </div>
   );
 }

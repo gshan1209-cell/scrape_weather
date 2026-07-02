@@ -11,6 +11,8 @@
 
 複製 `.env.example` 為 `.env`，如果要讀取即時 CWA 資料，請設定 `CWA_API_KEY`。沒有 API key 時，後端會回傳固定 mock fallback 資料，JSON 格式與正式資料一致。
 
+若本機 Python 連線 CWA 時出現 `CERTIFICATE_VERIFY_FAILED`，開發環境可暫時在 `.env` 設定 `CWA_VERIFY_SSL=false`。正式環境建議維持 `true`，並改用正確的系統憑證或受信任 CA 設定。
+
 天氣地圖 provider：
 
 - `mock`：預設模式，使用 Leaflet + OpenStreetMap 與 mock 天氣 overlay，不需要第三方天氣地圖 API。

@@ -13,9 +13,10 @@ type Props = {
   district?: string;
   crop?: string;
   advisory?: WeeklyAdvisoryResponse;
+  onLocationSelect?: (city: string, district?: string) => void;
 };
 
-export function WindyMapClient({ config, city, district, crop, advisory }: Props) {
+export function WindyMapClient({ config, city, district, crop, advisory, onLocationSelect }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [windyLoaded, setWindyLoaded] = useState(false);
@@ -44,7 +45,7 @@ export function WindyMapClient({ config, city, district, crop, advisory }: Props
   }, [leafletLoaded, windyLoaded, config]);
 
   if (failed) {
-    return <MapProviderFallback reason="Windy 地圖載入失敗，已自動改用 Leaflet 模擬地圖。" config={config} city={city} district={district} crop={crop} advisory={advisory} />;
+    return <MapProviderFallback reason="Windy 地圖載入失敗，已自動改用 Leaflet 模擬地圖。" config={config} city={city} district={district} crop={crop} advisory={advisory} onLocationSelect={onLocationSelect} />;
   }
 
   return (
@@ -63,7 +64,7 @@ export function WindyMapClient({ config, city, district, crop, advisory }: Props
       />
 
       <div id="windy" ref={containerRef} className="h-[520px] min-h-[70vh] w-full" />
-      <MapFloatingAdvice advisory={advisory} />
+      <MapFloatingAdvice advisory={advisory} crop={crop} />
     </section>
   );
 }

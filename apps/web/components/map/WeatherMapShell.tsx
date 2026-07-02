@@ -10,14 +10,15 @@ type Props = {
   district?: string;
   crop?: string;
   advisory?: WeeklyAdvisoryResponse;
+  onLocationSelect?: (city: string, district?: string) => void;
 };
 
-export function WeatherMapShell({ city, district, crop, advisory }: Props) {
+export function WeatherMapShell({ city, district, crop, advisory, onLocationSelect }: Props) {
   const config = getWeatherMapConfig();
 
   if (config.provider === "windy" && config.windyApiKey) {
-    return <WindyMapClient config={config} city={city} district={district} crop={crop} advisory={advisory} />;
+    return <WindyMapClient config={config} city={city} district={district} crop={crop} advisory={advisory} onLocationSelect={onLocationSelect} />;
   }
 
-  return <LeafletWeatherMap config={config} city={city} district={district} crop={crop} advisory={advisory} />;
+  return <LeafletWeatherMap config={config} city={city} district={district} crop={crop} advisory={advisory} onLocationSelect={onLocationSelect} />;
 }

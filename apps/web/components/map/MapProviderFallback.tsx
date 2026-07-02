@@ -10,13 +10,14 @@ type Props = {
   district?: string;
   crop?: string;
   advisory?: WeeklyAdvisoryResponse;
+  onLocationSelect?: (city: string, district?: string) => void;
 };
 
-export function MapProviderFallback({ reason, config, city, district, crop, advisory }: Props) {
+export function MapProviderFallback({ reason, config, city, district, crop, advisory, onLocationSelect }: Props) {
   return (
     <div className="space-y-3">
       <AlertBanner level="warning" title="天氣地圖已切換備援" message={reason} />
-      <LeafletWeatherMap config={{ ...config, provider: "mock" }} city={city} district={district} crop={crop} advisory={advisory} />
+      <LeafletWeatherMap config={{ ...config, provider: "mock" }} city={city} district={district} crop={crop} advisory={advisory} onLocationSelect={onLocationSelect} />
     </div>
   );
 }

@@ -15,6 +15,8 @@ import { CurrentWeatherCard } from "@/components/weather/CurrentWeatherCard";
 import { WeeklyForecastCard } from "@/components/weather/WeeklyForecastCard";
 import { useWeeklyAdvisory } from "@/features/advisory/hooks";
 import { useLocations } from "@/features/location/hooks";
+import { useSystemHealth } from "@/features/system/hooks";
+import { getWeatherMapConfig } from "@/features/weather-map/config";
 import { useWeeklyWeather } from "@/features/weather/hooks";
 
 export default function HomePage() {
@@ -24,6 +26,10 @@ export default function HomePage() {
   const weather = useWeeklyWeather(city, district);
   const advisory = useWeeklyAdvisory(city, district, crop);
   const locations = useLocations();
+  const health = useSystemHealth();
+
+  const mapConfig = useMemo(() => getWeatherMapConfig(), []);
+  const mapMode = mapConfig.provider === "windy" && mapConfig.windyApiKey ? "Windy" : "Leaflet 模擬";
 
   const districts = useMemo(() => {
     return locations.data?.locations.find((item) => item.city === city)?.districts ?? ["北投區"];
@@ -33,6 +39,28 @@ export default function HomePage() {
     setCity(value);
     const nextDistricts = locations.data?.locations.find((item) => item.city === value)?.districts;
     setDistrict(nextDistricts?.[0] ?? "");
+  }
+
+  function handleLocationSelect(selectedCity: string, selectedDistrict?: string) {
+    const cityExists = (locations.data?.locations ?? []).some((item) => item.city === selectedCity);
+    if (!cityExists) return;
+
+    setCity(selectedCity);
+    if (selectedDistrict) {
+      const districtsForCity = locations.data?.locations.find((item) => item.city === selectedCity)?.districts ?? [];
+      if (districtsForCity.includes(selectedDistrict)) {
+        setDistrict(selectedDistrict);
+      } else {
+        setDistrict(districtsForCity[0] ?? "");
+      }
+    }
+  }
+
+  function refreshAll() {
+    weather.reload();
+    advisory.reload();
+    locations.reload();
+    health.reload();
   }
 
   const firstDay = weather.data?.days[0];
@@ -50,6 +78,12 @@ export default function HomePage() {
           loading={isLoading}
           updatedAt={weather.data?.updatedAt}
           source={weather.data?.source}
+          health={health.data}
+          healthLoading={health.loading}
+          healthError={health.error}
+          mapMode={mapMode}
+          weatherError={weather.error}
+          advisoryError={advisory.error}
         />
 
         <div className="min-w-0 space-y-5">
@@ -85,25 +119,18 @@ export default function HomePage() {
                 </Select>
                 <CropSelector value={crop} onChange={setCrop} />
               </div>
-              <Button
-                className="mt-4 w-full"
-                onClick={() => {
-                  weather.reload();
-                  advisory.reload();
-                  locations.reload();
-                }}
-              >
+              <Button className="mt-4 w-full" onClick={refreshAll}>
                 <RefreshCw className="h-4 w-4" />
                 重新整理
               </Button>
             </div>
           </section>
 
-          {(weather.error || advisory.error) && (
-            <AlertBanner level="warning" title="API 連線異常" message="前端暫時無法連到其中一個後端 API。" />
+          {(weather.error || advisory.error || locations.error) && (
+            <AlertBanner level="warning" title="API 連線異常" message="部分資料暫時無法同步，系統會保留目前可用內容。" />
           )}
 
-          <WeatherMapShell city={city} district={district} crop={crop} advisory={advisory.data} />
+          <WeatherMapShell city={city} district={district} crop={crop} advisory={advisory.data} onLocationSelect={handleLocationSelect} />
 
           <section className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
             <CurrentWeatherCard day={firstDay} loading={weather.loading} source={weather.data?.source} />

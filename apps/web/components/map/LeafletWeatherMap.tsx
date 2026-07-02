@@ -12,6 +12,7 @@ import { MapTimeline } from "./MapTimeline";
 type LeafletModule = typeof import("leaflet");
 type LeafletMap = import("leaflet").Map;
 type LeafletLayerGroup = import("leaflet").LayerGroup;
+type LeafletMouseEvent = import("leaflet").LeafletMouseEvent;
 
 type Props = {
   config: WeatherMapConfig;
@@ -19,17 +20,26 @@ type Props = {
   district?: string;
   crop?: string;
   advisory?: WeeklyAdvisoryResponse;
+  onLocationSelect?: (city: string, district?: string) => void;
 };
 
-const TAIWAN_POINTS = [
-  { name: "北部", lat: 25.033, lon: 121.5654 },
-  { name: "中部", lat: 24.1477, lon: 120.6736 },
-  { name: "南部", lat: 22.9999, lon: 120.227 },
-  { name: "東部", lat: 23.9872, lon: 121.6015 },
-  { name: "屏東", lat: 22.5519, lon: 120.5488 },
+type MapPoint = {
+  label: string;
+  city: string;
+  district: string;
+  lat: number;
+  lon: number;
+};
+
+const TAIWAN_POINTS: MapPoint[] = [
+  { label: "北部", city: "臺北市", district: "北投區", lat: 25.033, lon: 121.5654 },
+  { label: "中部", city: "臺中市", district: "新社區", lat: 24.1477, lon: 120.6736 },
+  { label: "南部", city: "臺南市", district: "新化區", lat: 22.9999, lon: 120.227 },
+  { label: "東部", city: "花蓮縣", district: "壽豐鄉", lat: 23.9872, lon: 121.6015 },
+  { label: "高屏", city: "高雄市", district: "美濃區", lat: 22.6273, lon: 120.3014 },
 ];
 
-export function LeafletWeatherMap({ config, city, district, crop, advisory }: Props) {
+export function LeafletWeatherMap({ config, city, district, crop, advisory, onLocationSelect }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const leafletRef = useRef<LeafletModule | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -61,15 +71,10 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory }: Pr
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         }).addTo(leafletMap);
 
-        L.circleMarker([map.location.lat, map.location.lon], {
-          radius: 8,
-          color: "#14532d",
-          fillColor: "#22c55e",
-          fillOpacity: 0.9,
-          weight: 2,
-        })
-          .bindTooltip(`${map.location.city}${map.location.district ? ` ${map.location.district}` : ""}`, { permanent: false })
-          .addTo(leafletMap);
+        leafletMap.on("click", (event: LeafletMouseEvent) => {
+          const nearest = findNearestPoint(event.latlng.lat, event.latlng.lng);
+          onLocationSelect?.(nearest.city, nearest.district);
+        });
 
         mapRef.current = leafletMap;
         overlayRef.current = L.layerGroup().addTo(leafletMap);
@@ -91,13 +96,22 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory }: Pr
       overlayRef.current = null;
       leafletRef.current = null;
     };
-  }, [config.defaultLat, config.defaultLon, config.defaultZoom, map.location.city, map.location.district, map.location.lat, map.location.lon]);
+  }, [config.defaultLat, config.defaultLon, config.defaultZoom, onLocationSelect]);
 
   useEffect(() => {
     if (!mapReady || !leafletRef.current || !overlayRef.current) return;
 
-    drawMockOverlay(leafletRef.current, overlayRef.current, map.overlay, map.selectedTimeIndex);
-  }, [map.overlay, map.selectedTimeIndex, mapReady]);
+    drawMockOverlay(leafletRef.current, overlayRef.current, map.overlay, map.selectedTimeIndex, city, onLocationSelect);
+  }, [city, map.overlay, map.selectedTimeIndex, mapReady, onLocationSelect]);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+
+    mapRef.current.setView([map.location.lat, map.location.lon], Math.max(config.defaultZoom, 7), {
+      animate: true,
+      duration: 0.35,
+    });
+  }, [config.defaultZoom, map.location.lat, map.location.lon, mapReady]);
 
   return (
     <section className="relative overflow-hidden rounded-md border border-stone-200 bg-stone-950 shadow-sm">
@@ -116,6 +130,7 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory }: Pr
       <div className="absolute left-4 top-4 max-w-[calc(100%-2rem)] rounded-md bg-white/95 px-4 py-3 text-stone-900 shadow-sm backdrop-blur">
         <p className="text-xs font-medium text-stone-500">{map.currentTimeLabel} 模擬天氣圖層</p>
         <h2 className="text-lg font-semibold">{city}{district ? `, ${district}` : ""}</h2>
+        <p className="mt-1 text-xs text-stone-500">點擊地圖區域可切換左側摘要與預報資料</p>
       </div>
 
       <MapLayerControl value={map.overlay} onChange={map.setOverlay} />
@@ -132,10 +147,33 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory }: Pr
   );
 }
 
-function drawMockOverlay(L: LeafletModule, group: LeafletLayerGroup, overlay: WeatherOverlay, timeIndex: number) {
+function drawMockOverlay(
+  L: LeafletModule,
+  group: LeafletLayerGroup,
+  overlay: WeatherOverlay,
+  timeIndex: number,
+  selectedCity: string,
+  onLocationSelect?: (city: string, district?: string) => void,
+) {
   group.clearLayers();
 
   const offset = timeIndex * 0.04;
+  TAIWAN_POINTS.forEach((point) => {
+    L.circleMarker([point.lat, point.lon], {
+      radius: point.city === selectedCity ? 9 : 6,
+      color: point.city === selectedCity ? "#14532d" : "#334155",
+      fillColor: point.city === selectedCity ? "#22c55e" : "#ffffff",
+      fillOpacity: 0.95,
+      weight: 2,
+    })
+      .bindTooltip(`${point.city} ${point.district}`, { permanent: false })
+      .on("click", (event) => {
+        L.DomEvent.stopPropagation(event);
+        onLocationSelect?.(point.city, point.district);
+      })
+      .addTo(group);
+  });
+
   if (overlay === "rain") {
     TAIWAN_POINTS.forEach((point, index) => {
       L.circle([point.lat + offset, point.lon - offset], {
@@ -144,8 +182,14 @@ function drawMockOverlay(L: LeafletModule, group: LeafletLayerGroup, overlay: We
         fillColor: index % 2 === 0 ? "#38bdf8" : "#6366f1",
         fillOpacity: 0.28,
         opacity: 0.7,
-        weight: 2,
-      }).bindTooltip(`${point.name} 降雨機率 ${45 + index * 8}%`).addTo(group);
+        weight: point.city === selectedCity ? 4 : 2,
+      })
+        .bindTooltip(`${point.label} 降雨機率 ${45 + index * 8}%`)
+        .on("click", (event) => {
+          L.DomEvent.stopPropagation(event);
+          onLocationSelect?.(point.city, point.district);
+        })
+        .addTo(group);
     });
     return;
   }
@@ -158,8 +202,14 @@ function drawMockOverlay(L: LeafletModule, group: LeafletLayerGroup, overlay: We
         fillColor: index > 2 ? "#ef4444" : "#facc15",
         fillOpacity: 0.32,
         opacity: 0.75,
-        weight: 2,
-      }).bindTooltip(`${point.name} 體感溫度 ${30 + index} C`).addTo(group);
+        weight: point.city === selectedCity ? 4 : 2,
+      })
+        .bindTooltip(`${point.label} 體感溫度 ${30 + index} °C`)
+        .on("click", (event) => {
+          L.DomEvent.stopPropagation(event);
+          onLocationSelect?.(point.city, point.district);
+        })
+        .addTo(group);
     });
     return;
   }
@@ -168,10 +218,16 @@ function drawMockOverlay(L: LeafletModule, group: LeafletLayerGroup, overlay: We
     const start: [number, number] = [point.lat - 0.12, point.lon - 0.2];
     const end: [number, number] = [point.lat + 0.12 + offset, point.lon + 0.24 + offset];
     L.polyline([start, end], {
-      color: "#0f766e",
+      color: point.city === selectedCity ? "#047857" : "#0f766e",
       opacity: 0.85,
-      weight: 4 + index,
-    }).bindTooltip(`${point.name} 風速 ${12 + index * 3} km/h`).addTo(group);
+      weight: point.city === selectedCity ? 7 : 4 + index,
+    })
+      .bindTooltip(`${point.label} 風速 ${12 + index * 3} km/h`)
+      .on("click", (event) => {
+        L.DomEvent.stopPropagation(event);
+        onLocationSelect?.(point.city, point.district);
+      })
+      .addTo(group);
     L.circleMarker(end, {
       radius: 5,
       color: "#0f766e",
@@ -180,4 +236,16 @@ function drawMockOverlay(L: LeafletModule, group: LeafletLayerGroup, overlay: We
       weight: 2,
     }).addTo(group);
   });
+}
+
+function findNearestPoint(lat: number, lon: number) {
+  return TAIWAN_POINTS.reduce((nearest, point) => {
+    const currentDistance = distanceSquared(lat, lon, point.lat, point.lon);
+    const nearestDistance = distanceSquared(lat, lon, nearest.lat, nearest.lon);
+    return currentDistance < nearestDistance ? point : nearest;
+  }, TAIWAN_POINTS[0]);
+}
+
+function distanceSquared(latA: number, lonA: number, latB: number, lonB: number) {
+  return (latA - latB) ** 2 + (lonA - lonB) ** 2;
 }

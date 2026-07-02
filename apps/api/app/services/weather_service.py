@@ -22,15 +22,15 @@ class WeatherService:
 
     def _normalize_cwa(self, raw: dict[str, Any], city: str, district: str | None) -> WeeklyWeatherResponse:
         records = raw.get("records", {})
-        locations = records.get("locations") or []
+        locations = records.get("locations") or records.get("Locations") or []
         location_items = []
         for group in locations:
-            location_items.extend(group.get("location", []))
+            location_items.extend(group.get("location", []) or group.get("Location", []))
         if not location_items:
-            location_items = records.get("location", [])
+            location_items = records.get("location", []) or records.get("Location", [])
 
         target = self._pick_location(location_items, district or city)
-        weather_elements = target.get("weatherElement", []) if target else []
+        weather_elements = (target.get("weatherElement", []) or target.get("WeatherElement", [])) if target else []
         days = self._days_from_elements(weather_elements)
         if not days:
             return self._mock_weather(city=city, district=district)
@@ -46,16 +46,16 @@ class WeatherService:
 
     def _pick_location(self, locations: list[dict[str, Any]], name: str) -> dict[str, Any] | None:
         for location in locations:
-            if location.get("locationName") == name:
+            if (location.get("locationName") or location.get("LocationName")) == name:
                 return location
         return locations[0] if locations else None
 
     def _days_from_elements(self, elements: list[dict[str, Any]]) -> list[DailyWeather]:
         by_date: dict[str, dict[str, Any]] = {}
         for element in elements:
-            name = element.get("elementName") or element.get("description") or ""
-            for item in element.get("time", []):
-                start = item.get("startTime") or item.get("dataTime")
+            name = element.get("elementName") or element.get("ElementName") or element.get("description") or ""
+            for item in element.get("time", []) or element.get("Time", []):
+                start = item.get("startTime") or item.get("StartTime") or item.get("dataTime") or item.get("DataTime")
                 if not start:
                     continue
                 date = start[:10]
@@ -67,25 +67,44 @@ class WeatherService:
         return [DailyWeather(**day) for _, day in sorted(by_date.items())]
 
     def _extract_value(self, item: dict[str, Any]) -> str | None:
-        values = item.get("elementValue") or []
+        values = item.get("elementValue") or item.get("ElementValue") or []
         if isinstance(values, list) and values:
             first = values[0]
-            return first.get("value") or first.get("measures")
+            preferred_keys = [
+                "value",
+                "measures",
+                "WeatherDescription",
+                "Weather",
+                "MaxTemperature",
+                "MinTemperature",
+                "Temperature",
+                "ProbabilityOfPrecipitation",
+                "MinComfortIndexDescription",
+                "MaxComfortIndexDescription",
+                "UVIndex",
+                "WindSpeed",
+                "WindDirection",
+            ]
+            for key in preferred_keys:
+                if first.get(key) is not None:
+                    return str(first[key])
+            if first:
+                return str(next(iter(first.values())))
         return item.get("parameter", {}).get("parameterName")
 
     def _time_range(self, item: dict[str, Any]) -> str | None:
-        start = item.get("startTime") or item.get("dataTime")
-        end = item.get("endTime")
+        start = item.get("startTime") or item.get("StartTime") or item.get("dataTime") or item.get("DataTime")
+        end = item.get("endTime") or item.get("EndTime")
         return f"{start}/{end}" if start and end else start
 
     def _apply_element(self, bucket: dict[str, Any], name: str, value: str | None) -> None:
         lowered = name.lower()
         number = self._to_int(value)
-        if name in {"Wx"} or "weather" in lowered or "天氣" in name:
+        if name in {"Wx"} or "weather" in lowered or name == "天氣現象":
             bucket["weather"] = value or bucket["weather"]
-        elif name in {"MaxT", "Tmax"} or "max" in lowered or "最高" in name:
+        elif name in {"MaxT", "Tmax"} or "max" in lowered or name == "最高溫度":
             bucket["maxTemp"] = number
-        elif name in {"MinT", "Tmin"} or "min" in lowered or "最低" in name:
+        elif name in {"MinT", "Tmin"} or "min" in lowered or name == "最低溫度":
             bucket["minTemp"] = number
         elif name in {"PoP", "PoP12h", "PoP6h"} or "rain" in lowered or "降雨" in name:
             bucket["rainProbability"] = number
@@ -95,6 +114,8 @@ class WeatherService:
             bucket["uvIndex"] = number
         elif "wind" in lowered or "風" in name:
             bucket["windDescription"] = value
+        elif name == "天氣預報綜合描述" and bucket.get("weather") in {None, "已有天氣資料"}:
+            bucket["weather"] = value or bucket["weather"]
 
     def _to_int(self, value: str | None) -> int | None:
         if value is None:

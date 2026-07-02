@@ -14,7 +14,7 @@ class CwaClient:
         if location_name:
             params["locationName"] = location_name
 
-        async with httpx.AsyncClient(timeout=20) as client:
+        async with httpx.AsyncClient(timeout=20, verify=settings.CWA_VERIFY_SSL) as client:
             response = await client.get(f"{self.BASE_URL}/{dataset_id}", params=params)
             response.raise_for_status()
             return response.json()
