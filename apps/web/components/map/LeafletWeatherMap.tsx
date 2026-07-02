@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { WeeklyAdvisoryResponse } from "@/features/advisory/types";
 import type { WeatherMapConfig, WeatherOverlay } from "@/features/weather-map/types";
 import { useWeatherMapState } from "@/features/weather-map/useWeatherMapState";
+import { useStations } from "@/features/weather/hooks";
+import type { WeatherStation } from "@/features/weather/types";
 import { MapFloatingAdvice } from "./MapFloatingAdvice";
 import { MapLayerControl } from "./MapLayerControl";
 import { MapLegend } from "./MapLegend";
@@ -44,9 +46,11 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, onLo
   const leafletRef = useRef<LeafletModule | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const overlayRef = useRef<LeafletLayerGroup | null>(null);
+  const stationLayerRef = useRef<LeafletLayerGroup | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const map = useWeatherMapState(config, city, district);
+  const stations = useStations();
 
   useEffect(() => {
     let disposed = false;
@@ -78,6 +82,7 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, onLo
 
         mapRef.current = leafletMap;
         overlayRef.current = L.layerGroup().addTo(leafletMap);
+        stationLayerRef.current = L.layerGroup().addTo(leafletMap);
         requestAnimationFrame(() => leafletMap.invalidateSize());
         setMapReady(true);
       } catch (error) {
@@ -91,9 +96,11 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, onLo
     return () => {
       disposed = true;
       overlayRef.current?.clearLayers();
+      stationLayerRef.current?.clearLayers();
       mapRef.current?.remove();
       mapRef.current = null;
       overlayRef.current = null;
+      stationLayerRef.current = null;
       leafletRef.current = null;
     };
   }, [config.defaultLat, config.defaultLon, config.defaultZoom, onLocationSelect]);
@@ -103,6 +110,12 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, onLo
 
     drawMockOverlay(leafletRef.current, overlayRef.current, map.overlay, map.selectedTimeIndex, city, onLocationSelect);
   }, [city, map.overlay, map.selectedTimeIndex, mapReady, onLocationSelect]);
+
+  useEffect(() => {
+    if (!mapReady || !leafletRef.current || !stationLayerRef.current || !stations.data?.stations.length) return;
+
+    drawStationMarkers(leafletRef.current, stationLayerRef.current, stations.data.stations, onLocationSelect);
+  }, [mapReady, stations.data, onLocationSelect]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
@@ -145,6 +158,73 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, onLo
       />
     </section>
   );
+}
+
+function drawStationMarkers(
+  L: LeafletModule,
+  group: LeafletLayerGroup,
+  stations: WeatherStation[],
+  onLocationSelect?: (city: string, district?: string) => void,
+) {
+  group.clearLayers();
+
+  for (const station of stations) {
+    if (station.airTemperature == null) continue;
+
+    const color = tempColor(station.airTemperature);
+    const marker = L.circleMarker([station.lat, station.lon], {
+      radius: 5,
+      color: color,
+      fillColor: color,
+      fillOpacity: 0.7,
+      weight: 1.5,
+    });
+
+    const precipText = station.precipitation != null ? `${station.precipitation}mm` : "-";
+    const humidText = station.relativeHumidity != null ? `${station.relativeHumidity}%` : "-";
+    const windText = station.windSpeed != null ? `${station.windSpeed}m/s` : "-";
+    const pressureText = station.airPressure != null ? `${station.airPressure}hPa` : "-";
+    const obsTime = station.obsTime ? station.obsTime.replace("T", " ").slice(0, 16) : "-";
+    const weatherText = station.weather || "-";
+
+    const tooltipHtml = `<b>${station.stationName}</b><br/>${station.airTemperature}°C / ${humidText}<br/>雨 ${precipText} / 風 ${windText}`;
+
+    marker.bindTooltip(tooltipHtml);
+
+    marker.on("click", (event: LeafletMouseEvent) => {
+      L.DomEvent.stopPropagation(event);
+
+      const popupHtml = `
+        <div style="min-width:200px;font-size:13px;line-height:1.7">
+          <b style="font-size:15px">${station.stationName}</b>
+          <div style="color:#666;margin-bottom:6px">${station.countyName} ${station.townName}</div>
+          <div><b>溫度</b> ${station.airTemperature}°C &nbsp; <b>濕度</b> ${humidText}</div>
+          <div><b>天氣</b> ${weatherText}</div>
+          <div><b>雨量</b> ${precipText} &nbsp; <b>風速</b> ${windText}</div>
+          <div><b>氣壓</b> ${pressureText}</div>
+          <div style="color:#999;margin-top:4px;font-size:11px">觀測時間 ${obsTime}</div>
+        </div>
+      `;
+
+      marker.unbindPopup();
+      marker.bindPopup(popupHtml, { maxWidth: 280 }).openPopup();
+
+      onLocationSelect?.(station.countyName, station.townName);
+    });
+
+    group.addLayer(marker);
+  }
+}
+
+function tempColor(temp: number): string {
+  if (temp >= 35) return "#b91c1c";
+  if (temp >= 31) return "#dc2626";
+  if (temp >= 28) return "#ea580c";
+  if (temp >= 24) return "#f59e0b";
+  if (temp >= 20) return "#84cc16";
+  if (temp >= 16) return "#22c55e";
+  if (temp >= 12) return "#06b6d4";
+  return "#3b82f6";
 }
 
 function drawMockOverlay(

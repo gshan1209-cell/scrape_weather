@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from app.core.config import settings
-from app.schemas.weather import DailyWeather, WeeklyWeatherResponse
+from app.schemas.weather import DailyWeather, StationsResponse, WeatherStation, WeeklyWeatherResponse
 from app.services.cwa_client import CwaClient
 
 
@@ -20,6 +20,64 @@ class WeatherService:
         except Exception:
             return self._mock_weather(city=city, district=district)
 
+    async def get_stations(self) -> StationsResponse:
+        try:
+            raw = await self.cwa_client.fetch_stations()
+            return self._normalize_stations(raw)
+        except Exception:
+            return StationsResponse(updatedAt=datetime.now(TAIPEI_TZ).isoformat(), stations=[])
+
+    def _normalize_stations(self, raw: dict[str, Any]) -> StationsResponse:
+        records = raw.get("records", {})
+        station_list = records.get("Station") or records.get("station") or []
+        stations: list[WeatherStation] = []
+        for entry in station_list:
+            geo = entry.get("GeoInfo", {})
+            coords = geo.get("Coordinates", [None]) or [None]
+            coord = coords[0] if coords else {}
+            lat = coord.get("StationLatitude") or coord.get("CoordinateLatitude")
+            lon = coord.get("StationLongitude") or coord.get("CoordinateLongitude")
+            if not lat or not lon:
+                continue
+
+            weather_elements = entry.get("WeatherElement", {})
+            now_info = weather_elements.get("Now", {}) if isinstance(weather_elements.get("Now"), dict) else {}
+            precip = now_info.get("Precipitation") if isinstance(now_info, dict) else None
+
+            obs_time = entry.get("ObsTime", {})
+            obs_datetime = obs_time.get("DateTime") if isinstance(obs_time, dict) else None
+
+            stations.append(WeatherStation(
+                stationId=entry.get("StationId", ""),
+                stationName=entry.get("StationName", ""),
+                countyName=geo.get("CountyName", ""),
+                townName=geo.get("TownName", ""),
+                lat=float(lat),
+                lon=float(lon),
+                altitude=self._to_float(geo.get("StationAltitude")),
+                obsTime=obs_datetime,
+                airTemperature=self._to_float(weather_elements.get("AirTemperature")),
+                precipitation=self._to_float(precip),
+                windSpeed=self._to_float(weather_elements.get("WindSpeed")),
+                windDirection=self._to_float(weather_elements.get("WindDirection")),
+                relativeHumidity=self._to_int(weather_elements.get("RelativeHumidity")),
+                airPressure=self._to_float(weather_elements.get("AirPressure")),
+                weather=weather_elements.get("Weather"),
+            ))
+
+        return StationsResponse(
+            updatedAt=datetime.now(TAIPEI_TZ).isoformat(),
+            stations=stations,
+        )
+
+    def _to_float(self, value: Any) -> float | None:
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return None
+
     def _normalize_cwa(self, raw: dict[str, Any], city: str, district: str | None) -> WeeklyWeatherResponse:
         records = raw.get("records", {})
         locations = records.get("locations") or records.get("Locations") or []
@@ -29,7 +87,7 @@ class WeatherService:
         if not location_items:
             location_items = records.get("location", []) or records.get("Location", [])
 
-        target = self._pick_location(location_items, district or city)
+        target = self._pick_location(location_items, city)
         weather_elements = (target.get("weatherElement", []) or target.get("WeatherElement", [])) if target else []
         days = self._days_from_elements(weather_elements)
         if not days:

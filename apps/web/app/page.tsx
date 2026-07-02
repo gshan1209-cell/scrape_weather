@@ -42,17 +42,17 @@ export default function HomePage() {
   }
 
   function handleLocationSelect(selectedCity: string, selectedDistrict?: string) {
-    const cityExists = (locations.data?.locations ?? []).some((item) => item.city === selectedCity);
-    if (!cityExists) return;
-
     setCity(selectedCity);
-    if (selectedDistrict) {
-      const districtsForCity = locations.data?.locations.find((item) => item.city === selectedCity)?.districts ?? [];
-      if (districtsForCity.includes(selectedDistrict)) {
+
+    const cityEntry = locations.data?.locations.find((item) => item.city === selectedCity);
+    if (cityEntry) {
+      if (selectedDistrict && cityEntry.districts.includes(selectedDistrict)) {
         setDistrict(selectedDistrict);
       } else {
-        setDistrict(districtsForCity[0] ?? "");
+        setDistrict(cityEntry.districts[0] ?? "");
       }
+    } else if (selectedDistrict) {
+      setDistrict(selectedDistrict);
     }
   }
 

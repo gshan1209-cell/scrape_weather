@@ -17,3 +17,26 @@ export type WeeklyWeatherResponse = {
   source: string;
   days: DailyWeather[];
 };
+
+export type WeatherStation = {
+  stationId: string;
+  stationName: string;
+  countyName: string;
+  townName: string;
+  lat: number;
+  lon: number;
+  altitude?: number | null;
+  obsTime?: string | null;
+  airTemperature?: number | null;
+  precipitation?: number | null;
+  windSpeed?: number | null;
+  windDirection?: number | null;
+  relativeHumidity?: number | null;
+  airPressure?: number | null;
+  weather?: string | null;
+};
+
+export type StationsResponse = {
+  updatedAt: string;
+  stations: WeatherStation[];
+};

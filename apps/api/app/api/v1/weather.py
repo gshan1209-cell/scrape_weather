@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.schemas.weather import WeeklyWeatherResponse
+from app.schemas.weather import StationsResponse, WeeklyWeatherResponse
 from app.services.weather_service import WeatherService
 
 
@@ -17,3 +17,11 @@ async def weekly_weather(
         return await service.get_weekly_weather(city=city, district=district)
     except Exception as exc:
         raise HTTPException(status_code=502, detail="Unable to fetch weather data") from exc
+
+
+@router.get("/stations", response_model=StationsResponse)
+async def weather_stations() -> StationsResponse:
+    try:
+        return await service.get_stations()
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Unable to fetch station data") from exc
