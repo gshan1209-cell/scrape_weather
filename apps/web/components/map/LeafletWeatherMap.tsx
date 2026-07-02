@@ -5,7 +5,7 @@ import { WeeklyAdvisoryResponse } from "@/features/advisory/types";
 import type { WeatherMapConfig, WeatherOverlay } from "@/features/weather-map/types";
 import { useWeatherMapState } from "@/features/weather-map/useWeatherMapState";
 import { useStations } from "@/features/weather/hooks";
-import type { WeatherStation } from "@/features/weather/types";
+import type { StationsResponse, WeatherStation } from "@/features/weather/types";
 import { MapFloatingAdvice } from "./MapFloatingAdvice";
 import { MapLayerControl } from "./MapLayerControl";
 import { MapLegend } from "./MapLegend";
@@ -22,6 +22,7 @@ type Props = {
   district?: string;
   crop?: string;
   advisory?: WeeklyAdvisoryResponse;
+  stations?: StationsResponse;
   onLocationSelect?: (city: string, district?: string) => void;
 };
 
@@ -41,7 +42,7 @@ const TAIWAN_POINTS: MapPoint[] = [
   { label: "高屏", city: "高雄市", district: "美濃區", lat: 22.6273, lon: 120.3014 },
 ];
 
-export function LeafletWeatherMap({ config, city, district, crop, advisory, onLocationSelect }: Props) {
+export function LeafletWeatherMap({ config, city, district, crop, advisory, stations: stationsProp, onLocationSelect }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const leafletRef = useRef<LeafletModule | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -50,7 +51,8 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, onLo
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const map = useWeatherMapState(config, city, district);
-  const stations = useStations();
+  const stationsFromHook = useStations();
+  const stationsData = stationsProp ?? stationsFromHook.data;
 
   useEffect(() => {
     let disposed = false;
@@ -112,10 +114,10 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, onLo
   }, [city, map.overlay, map.selectedTimeIndex, mapReady, onLocationSelect]);
 
   useEffect(() => {
-    if (!mapReady || !leafletRef.current || !stationLayerRef.current || !stations.data?.stations.length) return;
+    if (!mapReady || !leafletRef.current || !stationLayerRef.current || !stationsData?.stations.length) return;
 
-    drawStationMarkers(leafletRef.current, stationLayerRef.current, stations.data.stations, onLocationSelect);
-  }, [mapReady, stations.data, onLocationSelect]);
+    drawStationMarkers(leafletRef.current, stationLayerRef.current, stationsData.stations, onLocationSelect);
+  }, [mapReady, stationsData, onLocationSelect]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;

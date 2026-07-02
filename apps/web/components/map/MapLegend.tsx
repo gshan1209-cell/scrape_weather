@@ -26,10 +26,10 @@ const titles: Record<WeatherOverlay, string> = {
 
 export function MapLegend({ overlay }: { overlay: WeatherOverlay }) {
   return (
-    <div className="absolute bottom-24 left-3 rounded-md bg-black/40 p-3 text-xs backdrop-blur md:bottom-20">
-      <div className="mb-2 font-semibold">{titles[overlay]}</div>
-      <div className={`h-2 w-36 rounded bg-gradient-to-r ${gradients[overlay]}`} />
-      <div className="mt-1 flex w-36 justify-between text-white/70">
+    <div className="absolute bottom-24 left-3 rounded-xl bg-black/50 p-3 text-xs backdrop-blur md:bottom-20">
+      <div className="mb-2 text-xs font-semibold text-white/80">{titles[overlay]}</div>
+      <div className={`h-2 w-36 rounded-full bg-gradient-to-r ${gradients[overlay]}`} />
+      <div className="mt-1.5 flex w-36 justify-between text-[11px] text-white/60">
         {labels[overlay].map((label) => (
           <span key={label}>{label}</span>
         ))}

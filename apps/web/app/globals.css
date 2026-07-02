@@ -4,14 +4,34 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, #f9f8f5 0%, #f7f6f1 30%, #f4f2ec 100%);
+    color: #1f2933;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: #d4ebe0;
+    color: #1f5c3d;
+  }
 }
 
-body {
-  margin: 0;
-  background: #f7f6f1;
-  color: #1f2933;
+@layer components {
+  .glass-panel {
+    @apply bg-white/90 backdrop-blur border border-white/60 shadow-card;
+  }
 }
 
 button,

@@ -1,16 +1,18 @@
 "use client";
 
-import { AlertTriangle, CalendarDays, CheckCircle2, CloudRain, Map, MapPin, Server, ThermometerSun, WifiOff } from "lucide-react";
+import { AlertTriangle, CalendarDays, CheckCircle2, CloudRain, Map, MapPin, RefreshCw, Server, Sprout, ThermometerSun, WifiOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { WeeklyAdvisoryResponse } from "@/features/advisory/types";
 import type { HealthResponse } from "@/features/system/types";
 import type { DailyWeather } from "@/features/weather/types";
+import { cn } from "@/lib/utils";
 
 type Props = {
   city: string;
   district?: string;
   crop: string;
   day?: DailyWeather;
+  days?: DailyWeather[];
   advisory?: WeeklyAdvisoryResponse;
   loading: boolean;
   updatedAt?: string;
@@ -28,6 +30,7 @@ export function SummarySidebar({
   district,
   crop,
   day,
+  days = [],
   advisory,
   loading,
   updatedAt,
@@ -41,82 +44,127 @@ export function SummarySidebar({
 }: Props) {
   const riskLevel = advisory?.riskLevel ?? "info";
   const apiOnline = health?.status === "ok" && !healthError;
+  const suggestions = advisory?.suggestions ?? [];
 
   return (
-    <aside className="lg:sticky lg:top-20">
-      <div className="rounded-md border border-stone-200 bg-white shadow-sm">
-        <div className="border-b border-stone-200 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium text-stone-500">今日摘要</p>
-              <h2 className="mt-1 text-xl font-semibold text-stone-950">{loading ? "資料載入中" : riskTitle(riskLevel)}</h2>
-            </div>
-            <Badge tone={riskLevel}>{riskLabel(riskLevel)}</Badge>
+    <div className="rounded-xl border border-stone-200/80 bg-white shadow-card overflow-hidden">
+      {/* Risk header */}
+      <div className="bg-field p-4 text-white">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-white/70">今日摘要</p>
+            <h2 className="mt-1 text-lg font-bold">{loading ? "資料載入中" : riskTitle(riskLevel)}</h2>
           </div>
-          <p className="mt-3 text-sm leading-6 text-stone-600">{advisory?.summary ?? "正在整理天氣風險與農事提醒。"}</p>
+          <Badge tone={riskLevel}>{riskLabel(riskLevel)}</Badge>
         </div>
+        {advisory?.summary && (
+          <p className="mt-3 text-sm leading-relaxed text-white/80">{advisory.summary}</p>
+        )}
 
-        <div className="grid gap-3 p-4">
-          <SummaryItem icon={MapPin} label="地區" value={`${city}${district ? ` / ${district}` : ""}`} />
-          <SummaryItem icon={CalendarDays} label="作物" value={crop} />
-          <SummaryItem icon={ThermometerSun} label="溫度" value={day ? `${day.minTemp ?? "--"} / ${day.maxTemp ?? "--"} °C` : "--"} />
-          <SummaryItem icon={CloudRain} label="降雨機率" value={day?.rainProbability == null ? "--" : `${day.rainProbability}%`} />
-          <SummaryItem icon={AlertTriangle} label="提醒數" value={`${advisory?.alerts.length ?? 0} 則`} />
-        </div>
-
-        <div className="border-t border-stone-200 p-4">
-          <p className="text-xs font-medium text-stone-500">系統狀態</p>
-          <div className="mt-3 grid gap-2">
-            <StatusLine
-              icon={apiOnline ? CheckCircle2 : WifiOff}
-              label="API"
-              value={healthLoading ? "檢查中" : apiOnline ? `在線 v${health?.version}` : "離線"}
-              tone={apiOnline ? "normal" : "danger"}
-            />
-            <StatusLine icon={Map} label="地圖" value={mapMode} tone="info" />
-            <StatusLine icon={Server} label="預報" value={weatherError ? "讀取失敗" : day ? "已同步" : "等待資料"} tone={weatherError ? "danger" : "normal"} />
-            <StatusLine icon={AlertTriangle} label="提醒" value={advisoryError ? "讀取失敗" : advisory ? "已產生" : "等待資料"} tone={advisoryError ? "danger" : "normal"} />
-          </div>
-        </div>
-
-        <div className="border-t border-stone-200 p-4">
-          <p className="text-xs font-medium text-stone-500">資料狀態</p>
-          <dl className="mt-2 space-y-2 text-sm">
-            <div className="flex justify-between gap-3">
-              <dt className="text-stone-500">來源</dt>
-              <dd className="text-right font-medium text-stone-800">{sourceLabel(source)}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-stone-500">更新</dt>
-              <dd className="text-right font-medium text-stone-800">{formatDateTime(updatedAt)}</dd>
-            </div>
-          </dl>
+        {/* Quick location/crop/temp */}
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          <Chip>{city}{district ? ` · ${district}` : ""}</Chip>
+          <Chip>{crop}</Chip>
+          {day && <Chip>{day.minTemp ?? "--"}° / {day.maxTemp ?? "--"}°</Chip>}
         </div>
       </div>
-    </aside>
-  );
-}
 
-function SummaryItem({ icon: Icon, label, value }: { icon: typeof MapPin; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-md bg-stone-50 p-3">
-      <Icon className="h-4 w-4 shrink-0 text-field" />
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-stone-500">{label}</p>
-        <p className="mt-0.5 truncate text-sm font-semibold text-stone-900">{value}</p>
+      {/* Farming suggestions */}
+      <div className="p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Sprout className="h-4 w-4 text-field" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">本週農事建議</p>
+          {suggestions.length > 0 && (
+            <span className="ml-auto text-[11px] font-medium text-stone-400">{suggestions.length} 項</span>
+          )}
+        </div>
+        {suggestions.length > 0 ? (
+          <div className="space-y-2">
+            {suggestions.map((text, idx) => (
+              <div key={idx} className="flex gap-2.5 rounded-lg bg-stone-50 p-2.5 text-sm text-stone-700 transition-colors hover:bg-stone-100">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-field-50 text-[11px] font-bold text-field">
+                  {idx + 1}
+                </span>
+                <span className="leading-relaxed">{text}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-stone-400 italic">尚無農事建議</p>
+        )}
+      </div>
+
+      {/* Weekly forecast */}
+      <div className="border-t border-stone-100 p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-field" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">一週預報</p>
+        </div>
+        {days.length > 0 ? (
+          <div className="divide-y divide-stone-100">
+            {days.map((d) => (
+              <DayRow key={d.date} day={d} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-stone-400 italic">{loading ? "載入中..." : "尚無預報資料"}</p>
+        )}
+      </div>
+
+      {/* Footer: system + data */}
+      <div className="border-t border-stone-100 bg-stone-50/50 p-4">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="flex items-center gap-1.5 text-stone-400">
+              {apiOnline ? <CheckCircle2 className="h-3 w-3 text-field" /> : <WifiOff className="h-3 w-3 text-red-400" />}
+              {healthLoading ? "檢查中" : apiOnline ? `API 在線 v${health?.version}` : "API 離線"}
+            </span>
+            <span className="text-stone-400">
+              {sourceLabel(source)} · {formatDateTime(updatedAt)}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-stone-400">
+            <span>地圖 {mapMode}</span>
+            <span>·</span>
+            <span className={cn(weatherError && "text-red-400")}>
+              預報 {weatherError ? "失敗" : day ? "已同步" : "等待中"}
+            </span>
+            <span>·</span>
+            <span className={cn(advisoryError && "text-red-400")}>
+              提醒 {advisoryError ? "失敗" : advisory ? "已產生" : "等待中"}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function StatusLine({ icon: Icon, label, value, tone }: { icon: typeof Server; label: string; value: string; tone: string }) {
+function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md bg-stone-50 px-3 py-2">
-      <div className="flex items-center gap-2 text-sm font-medium text-stone-700">
-        <Icon className="h-4 w-4 text-field" />
-        {label}
-      </div>
-      <Badge tone={tone}>{value}</Badge>
+    <span className="inline-flex items-center rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-medium backdrop-blur">
+      {children}
+    </span>
+  );
+}
+
+function DayRow({ day }: { day: DailyWeather }) {
+  const DAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];
+  const d = new Date(day.date);
+  const dow = DAY_LABELS[d.getDay()];
+
+  return (
+    <div className="flex items-center gap-2.5 py-2 text-sm">
+      <span className="w-8 text-center text-[11px] font-medium text-stone-400">
+        {d.getMonth() + 1}/{d.getDate()}
+      </span>
+      <span className="w-6 text-center text-xs font-bold text-stone-500">週{dow}</span>
+      <span className="min-w-0 flex-1 truncate text-stone-700">{day.weather}</span>
+      <span className="shrink-0 text-right text-xs tabular-nums text-stone-500">
+        <span className="font-semibold text-stone-700">{day.minTemp ?? "--"}</span>
+        <span className="mx-0.5 text-stone-300">~</span>
+        <span className="font-semibold text-stone-700">{day.maxTemp ?? "--"}</span>°
+      </span>
     </div>
   );
 }
@@ -136,9 +184,10 @@ function riskTitle(level: string) {
 }
 
 function sourceLabel(source?: string) {
-  if (source === "Mock Weather Data" || source === "模擬天氣資料") return "模擬天氣資料";
-  if (source === "CWA OpenData") return "CWA 開放資料";
-  return source ?? "--";
+  if (!source) return "--";
+  if (source === "Mock Weather Data" || source === "模擬天氣資料") return "模擬";
+  if (source === "CWA OpenData") return "CWA";
+  return source;
 }
 
 function formatDateTime(value?: string) {
