@@ -72,6 +72,19 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, stat
           scrollWheelZoom: true,
         });
 
+        leafletMap.createPane("weatherOverlayPane");
+        leafletMap.createPane("weatherStationPane");
+        const overlayPane = leafletMap.getPane("weatherOverlayPane");
+        const stationPane = leafletMap.getPane("weatherStationPane");
+        if (overlayPane) {
+          overlayPane.style.zIndex = "430";
+          overlayPane.style.pointerEvents = "auto";
+        }
+        if (stationPane) {
+          stationPane.style.zIndex = "650";
+          stationPane.style.pointerEvents = "auto";
+        }
+
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 18,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -114,10 +127,10 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, stat
   }, [city, map.overlay, map.selectedTimeIndex, mapReady, onLocationSelect]);
 
   useEffect(() => {
-    if (!mapReady || !leafletRef.current || !stationLayerRef.current || !stationsData?.stations.length) return;
+    if (!mapReady || !leafletRef.current || !stationLayerRef.current) return;
 
-    drawStationMarkers(leafletRef.current, stationLayerRef.current, stationsData.stations, onLocationSelect);
-  }, [mapReady, stationsData, onLocationSelect]);
+    drawStationMarkers(leafletRef.current, stationLayerRef.current, stationsData?.stations ?? [], city, onLocationSelect);
+  }, [city, mapReady, stationsData, onLocationSelect]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
@@ -145,7 +158,7 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, stat
       <div className="absolute left-4 top-4 max-w-[calc(100%-2rem)] rounded-md bg-white/95 px-4 py-3 text-stone-900 shadow-sm backdrop-blur">
         <p className="text-xs font-medium text-stone-500">{map.currentTimeLabel} 模擬天氣圖層</p>
         <h2 className="text-lg font-semibold">{city}{district ? `, ${district}` : ""}</h2>
-        <p className="mt-1 text-xs text-stone-500">點擊地圖區域可切換左側摘要與預報資料</p>
+        <p className="mt-1 text-xs text-stone-500">點擊地圖區域或測站可切換左側摘要與預報資料</p>
       </div>
 
       <MapLayerControl value={map.overlay} onChange={map.setOverlay} />
@@ -166,22 +179,27 @@ function drawStationMarkers(
   L: LeafletModule,
   group: LeafletLayerGroup,
   stations: WeatherStation[],
+  selectedCity: string,
   onLocationSelect?: (city: string, district?: string) => void,
 ) {
   group.clearLayers();
 
   for (const station of stations) {
-    if (station.airTemperature == null) continue;
+    if (!Number.isFinite(station.lat) || !Number.isFinite(station.lon)) continue;
 
-    const color = tempColor(station.airTemperature);
+    const hasTemperature = station.airTemperature != null;
+    const isSelectedCity = station.countyName === selectedCity;
+    const color = hasTemperature ? tempColor(station.airTemperature as number) : "#64748b";
     const marker = L.circleMarker([station.lat, station.lon], {
-      radius: 5,
-      color: color,
+      radius: isSelectedCity ? 7 : 5,
+      color: isSelectedCity ? "#14532d" : color,
       fillColor: color,
-      fillOpacity: 0.7,
-      weight: 1.5,
+      fillOpacity: hasTemperature ? 0.9 : 0.55,
+      weight: isSelectedCity ? 2.5 : 1.5,
+      pane: "weatherStationPane",
     });
 
+    const tempText = hasTemperature ? `${station.airTemperature}°C` : "無溫度資料";
     const precipText = station.precipitation != null ? `${station.precipitation}mm` : "-";
     const humidText = station.relativeHumidity != null ? `${station.relativeHumidity}%` : "-";
     const windText = station.windSpeed != null ? `${station.windSpeed}m/s` : "-";
@@ -189,22 +207,26 @@ function drawStationMarkers(
     const obsTime = station.obsTime ? station.obsTime.replace("T", " ").slice(0, 16) : "-";
     const weatherText = station.weather || "-";
 
-    const tooltipHtml = `<b>${station.stationName}</b><br/>${station.airTemperature}°C / ${humidText}<br/>雨 ${precipText} / 風 ${windText}`;
+    const tooltipHtml = `<b>${escapeHtml(station.stationName)}</b><br/>${escapeHtml(tempText)} / ${escapeHtml(humidText)}<br/>雨 ${escapeHtml(precipText)} / 風 ${escapeHtml(windText)}`;
 
-    marker.bindTooltip(tooltipHtml);
+    marker.bindTooltip(tooltipHtml, {
+      direction: "top",
+      offset: [0, -8],
+      sticky: true,
+    });
 
     marker.on("click", (event: LeafletMouseEvent) => {
       L.DomEvent.stopPropagation(event);
 
       const popupHtml = `
         <div style="min-width:200px;font-size:13px;line-height:1.7">
-          <b style="font-size:15px">${station.stationName}</b>
-          <div style="color:#666;margin-bottom:6px">${station.countyName} ${station.townName}</div>
-          <div><b>溫度</b> ${station.airTemperature}°C &nbsp; <b>濕度</b> ${humidText}</div>
-          <div><b>天氣</b> ${weatherText}</div>
-          <div><b>雨量</b> ${precipText} &nbsp; <b>風速</b> ${windText}</div>
-          <div><b>氣壓</b> ${pressureText}</div>
-          <div style="color:#999;margin-top:4px;font-size:11px">觀測時間 ${obsTime}</div>
+          <b style="font-size:15px">${escapeHtml(station.stationName)}</b>
+          <div style="color:#666;margin-bottom:6px">${escapeHtml(station.countyName)} ${escapeHtml(station.townName)}</div>
+          <div><b>溫度</b> ${escapeHtml(tempText)} &nbsp; <b>濕度</b> ${escapeHtml(humidText)}</div>
+          <div><b>天氣</b> ${escapeHtml(weatherText)}</div>
+          <div><b>雨量</b> ${escapeHtml(precipText)} &nbsp; <b>風速</b> ${escapeHtml(windText)}</div>
+          <div><b>氣壓</b> ${escapeHtml(pressureText)}</div>
+          <div style="color:#999;margin-top:4px;font-size:11px">觀測時間 ${escapeHtml(obsTime)}</div>
         </div>
       `;
 
@@ -215,6 +237,7 @@ function drawStationMarkers(
     });
 
     group.addLayer(marker);
+    marker.bringToFront();
   }
 }
 
@@ -247,6 +270,7 @@ function drawMockOverlay(
       fillColor: point.city === selectedCity ? "#22c55e" : "#ffffff",
       fillOpacity: 0.95,
       weight: 2,
+      pane: "weatherOverlayPane",
     })
       .bindTooltip(`${point.city} ${point.district}`, { permanent: false })
       .on("click", (event) => {
@@ -265,6 +289,7 @@ function drawMockOverlay(
         fillOpacity: 0.28,
         opacity: 0.7,
         weight: point.city === selectedCity ? 4 : 2,
+        pane: "weatherOverlayPane",
       })
         .bindTooltip(`${point.label} 降雨機率 ${45 + index * 8}%`)
         .on("click", (event) => {
@@ -285,6 +310,7 @@ function drawMockOverlay(
         fillOpacity: 0.32,
         opacity: 0.75,
         weight: point.city === selectedCity ? 4 : 2,
+        pane: "weatherOverlayPane",
       })
         .bindTooltip(`${point.label} 體感溫度 ${30 + index} °C`)
         .on("click", (event) => {
@@ -303,6 +329,7 @@ function drawMockOverlay(
       color: point.city === selectedCity ? "#047857" : "#0f766e",
       opacity: 0.85,
       weight: point.city === selectedCity ? 7 : 4 + index,
+      pane: "weatherOverlayPane",
     })
       .bindTooltip(`${point.label} 風速 ${12 + index * 3} km/h`)
       .on("click", (event) => {
@@ -316,6 +343,7 @@ function drawMockOverlay(
       fillColor: "#ccfbf1",
       fillOpacity: 0.9,
       weight: 2,
+      pane: "weatherOverlayPane",
     }).addTo(group);
   });
 }
@@ -330,4 +358,13 @@ function findNearestPoint(lat: number, lon: number) {
 
 function distanceSquared(latA: number, lonA: number, latB: number, lonB: number) {
   return (latA - latB) ** 2 + (lonA - lonB) ** 2;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
