@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CalendarDays, CheckCircle2, CloudRain, Map, MapPin, RefreshCw, Server, Sprout, ThermometerSun, WifiOff } from "lucide-react";
+import { AlertTriangle, CalendarDays, CheckCircle2, Cloud, CloudRain, CloudSun, Map, MapPin, RefreshCw, Server, Sprout, Sun, ThermometerSun, WifiOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { WeeklyAdvisoryResponse } from "@/features/advisory/types";
 import type { HealthResponse } from "@/features/system/types";
@@ -23,6 +23,7 @@ type Props = {
   mapMode: string;
   weatherError?: Error;
   advisoryError?: Error;
+  themeColor?: string;
 };
 
 export function SummarySidebar({
@@ -41,6 +42,7 @@ export function SummarySidebar({
   mapMode,
   weatherError,
   advisoryError,
+  themeColor = "#2f7d57",
 }: Props) {
   const riskLevel = advisory?.riskLevel ?? "info";
   const apiOnline = health?.status === "ok" && !healthError;
@@ -49,7 +51,7 @@ export function SummarySidebar({
   return (
     <div className="rounded-xl border border-stone-200/80 bg-white shadow-card overflow-hidden">
       {/* Risk header */}
-      <div className="bg-field p-4 text-white">
+      <div className="p-4 text-white" style={{ background: themeColor }}>
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-medium text-white/70">今日摘要</p>
@@ -152,14 +154,22 @@ function DayRow({ day }: { day: DailyWeather }) {
   const DAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];
   const d = new Date(day.date);
   const dow = DAY_LABELS[d.getDay()];
+  const WeatherIcon = weatherIcon(day.weather);
 
   return (
-    <div className="flex items-center gap-2.5 py-2 text-sm">
+    <div className="flex items-center gap-2 py-2 text-sm">
       <span className="w-8 text-center text-[11px] font-medium text-stone-400">
         {d.getMonth() + 1}/{d.getDate()}
       </span>
       <span className="w-6 text-center text-xs font-bold text-stone-500">週{dow}</span>
+      <WeatherIcon className="h-4 w-4 shrink-0 text-stone-400" />
       <span className="min-w-0 flex-1 truncate text-stone-700">{day.weather}</span>
+      {day.rainProbability != null && (
+        <span className="flex shrink-0 items-center gap-0.5 text-xs text-sky-600">
+          <CloudRain className="h-3 w-3" />
+          {day.rainProbability}%
+        </span>
+      )}
       <span className="shrink-0 text-right text-xs tabular-nums text-stone-500">
         <span className="font-semibold text-stone-700">{day.minTemp ?? "--"}</span>
         <span className="mx-0.5 text-stone-300">~</span>
@@ -167,6 +177,14 @@ function DayRow({ day }: { day: DailyWeather }) {
       </span>
     </div>
   );
+}
+
+function weatherIcon(text: string) {
+  const t = text.toLowerCase();
+  if (t.includes("雨") || t.includes("rain")) return CloudRain;
+  if (t.includes("陰") || t.includes("雲") || t.includes("cloud")) return Cloud;
+  if (t.includes("晴") || t.includes("sun") || t.includes("clear")) return Sun;
+  return CloudSun;
 }
 
 function riskLabel(level: string) {

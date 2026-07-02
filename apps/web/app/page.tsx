@@ -15,6 +15,7 @@ import { useLocations } from "@/features/location/hooks";
 import { useSystemHealth } from "@/features/system/hooks";
 import { getWeatherMapConfig } from "@/features/weather-map/config";
 import { useStations, useWeeklyWeather } from "@/features/weather/hooks";
+import { tempToColor, tempToGradient } from "@/lib/utils";
 
 const FALLBACK_CITY = "臺北市";
 const FALLBACK_DISTRICT = "北投區";
@@ -108,6 +109,16 @@ export default function HomePage() {
   const allDays = weather.data?.days ?? [];
   const isLoading = weather.loading || advisory.loading;
 
+  const themeColor = useMemo(() => {
+    const temp = firstDay?.maxTemp ?? firstDay?.minTemp ?? 26;
+    return tempToColor(temp);
+  }, [firstDay]);
+
+  const themeGradient = useMemo(() => {
+    const temp = firstDay?.maxTemp ?? firstDay?.minTemp ?? 26;
+    return tempToGradient(temp);
+  }, [firstDay]);
+
   return (
     <PageContainer>
       <div className="grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
@@ -130,6 +141,7 @@ export default function HomePage() {
               mapMode={mapMode}
               weatherError={weather.error}
               advisoryError={advisory.error}
+              themeColor={themeColor}
             />
           </div>
         </aside>
@@ -137,7 +149,7 @@ export default function HomePage() {
         {/* ---------- Main ---------- */}
         <div className="min-w-0 space-y-6 animate-slide-up">
           {/* Hero + Controls */}
-          <section className="rounded-xl bg-hero-gradient p-6 text-white shadow-elevated md:p-8">
+          <section className="rounded-xl p-6 text-white shadow-elevated md:p-8" style={{ background: themeGradient }}>
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-lg">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
@@ -231,6 +243,7 @@ export default function HomePage() {
               mapMode={mapMode}
               weatherError={weather.error}
               advisoryError={advisory.error}
+              themeColor={themeColor}
             />
           </section>
 
