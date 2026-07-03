@@ -20,6 +20,41 @@
 
 CWA 仍是本專案一週預報與農事提醒的主要資料來源。不要在正式環境使用 Windy trial/testing key，也不要複製 Windy 品牌或完整 UI。
 
+## 看不到地圖怎麼辦
+
+不需要搭配 Google Earth。本專案 MVP 預設使用 Leaflet + OpenStreetMap 顯示台灣地圖，CWA OpenData 提供一週預報與測站資料。
+
+請依序檢查：
+
+1. 確認前端環境變數使用預設 mock provider：
+
+   ```env
+   NEXT_PUBLIC_WEATHER_MAP_PROVIDER=mock
+   ```
+
+2. 確認 Leaflet CSS 已由 `apps/web/app/globals.css` 載入：
+
+   ```css
+   @import "leaflet/dist/leaflet.css";
+   ```
+
+3. 確認地圖容器有高度。`LeafletWeatherMap` 預設使用：
+
+   ```tsx
+   className="h-[520px] min-h-[70vh] w-full"
+   ```
+
+4. 若要啟用 Windy，需設定：
+
+   ```env
+   NEXT_PUBLIC_WEATHER_MAP_PROVIDER=windy
+   NEXT_PUBLIC_WINDY_API_KEY=your_valid_windy_key
+   ```
+
+5. 若 Windy script、Windy key 或初始化 callback 失敗，前端會在約 8 秒內自動切回 Leaflet mock map，並顯示「天氣地圖已切換備援」。
+
+6. 若看不到即時測站，請確認後端有設定 `CWA_API_KEY`。沒有 key 時，一週預報仍會回 mock fallback，但 `/weather/stations` 會回傳空陣列，地圖仍保留區域 mock 點可操作。
+
 ### 啟動 API
 
 ```powershell
@@ -45,6 +80,7 @@ npm run dev
 - `GET /api/v1/health`
 - `GET /api/v1/locations`
 - `GET /api/v1/weather/weekly?city=臺北市&district=北投區`
+- `GET /api/v1/weather/stations`
 - `GET /api/v1/advisory/weekly?city=臺北市&district=北投區&crop=水稻`
 
 FastAPI 文件：`http://localhost:8000/docs`
