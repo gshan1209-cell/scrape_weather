@@ -85,10 +85,14 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, stat
           stationPane.style.pointerEvents = "auto";
         }
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        const tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 18,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(leafletMap);
+        });
+        tileLayer.on("tileerror", () => {
+          setMapError("OpenStreetMap 圖磚載入失敗，請確認網路連線或稍後再試。");
+        });
+        tileLayer.addTo(leafletMap);
 
         leafletMap.on("click", (event: LeafletMouseEvent) => {
           const nearest = findNearestPoint(event.latlng.lat, event.latlng.lng);
@@ -150,13 +154,13 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, stat
       )}
 
       {mapError && (
-        <div className="absolute inset-0 grid place-items-center bg-stone-950 p-6 text-center text-sm font-medium text-white">
+        <div className="absolute inset-0 z-[700] grid place-items-center bg-stone-950/90 p-6 text-center text-sm font-medium text-white">
           {mapError}
         </div>
       )}
 
       <div className="absolute left-4 top-4 max-w-[calc(100%-2rem)] rounded-md bg-white/95 px-4 py-3 text-stone-900 shadow-sm backdrop-blur">
-        <p className="text-xs font-medium text-stone-500">{map.currentTimeLabel} 模擬天氣圖層</p>
+        <p className="text-xs font-medium text-stone-500">{map.currentTimeLabel} 模擬天氣圖層 · Leaflet mock map</p>
         <h2 className="text-lg font-semibold">{city}{district ? `, ${district}` : ""}</h2>
         <p className="mt-1 text-xs text-stone-500">點擊地圖區域或測站可切換左側摘要與預報資料</p>
       </div>
@@ -255,13 +259,14 @@ function tempColor(temp: number): string {
 function drawMockOverlay(
   L: LeafletModule,
   group: LeafletLayerGroup,
-  _overlay: WeatherOverlay,
-  _timeIndex: number,
+  overlay: WeatherOverlay,
+  timeIndex: number,
   selectedCity: string,
   onLocationSelect?: (city: string, district?: string) => void,
 ) {
   group.clearLayers();
 
+  const offset = timeIndex * 0.04;
   TAIWAN_POINTS.forEach((point) => {
     L.circleMarker([point.lat, point.lon], {
       radius: point.city === selectedCity ? 9 : 6,
@@ -269,6 +274,7 @@ function drawMockOverlay(
       fillColor: point.city === selectedCity ? "#22c55e" : "#ffffff",
       fillOpacity: 0.95,
       weight: 2,
+      pane: "weatherOverlayPane",
     })
       .bindTooltip(`${point.city} ${point.district}`, { permanent: false })
       .on("click", (event) => {
@@ -276,6 +282,73 @@ function drawMockOverlay(
         onLocationSelect?.(point.city, point.district);
       })
       .addTo(group);
+  });
+
+  if (overlay === "rain") {
+    TAIWAN_POINTS.forEach((point, index) => {
+      L.circle([point.lat + offset, point.lon - offset], {
+        radius: 28000 + index * 6000,
+        color: "#2563eb",
+        fillColor: index % 2 === 0 ? "#38bdf8" : "#6366f1",
+        fillOpacity: 0.28,
+        opacity: 0.7,
+        weight: point.city === selectedCity ? 4 : 2,
+        pane: "weatherOverlayPane",
+      })
+        .bindTooltip(`${point.label} 降雨機率 ${45 + index * 8}%`)
+        .on("click", (event) => {
+          L.DomEvent.stopPropagation(event);
+          onLocationSelect?.(point.city, point.district);
+        })
+        .addTo(group);
+    });
+    return;
+  }
+
+  if (overlay === "temperature") {
+    TAIWAN_POINTS.forEach((point, index) => {
+      L.circle([point.lat, point.lon], {
+        radius: 24000 + index * 5000,
+        color: "#ea580c",
+        fillColor: index > 2 ? "#ef4444" : "#facc15",
+        fillOpacity: 0.32,
+        opacity: 0.75,
+        weight: point.city === selectedCity ? 4 : 2,
+        pane: "weatherOverlayPane",
+      })
+        .bindTooltip(`${point.label} 體感溫度 ${30 + index} °C`)
+        .on("click", (event) => {
+          L.DomEvent.stopPropagation(event);
+          onLocationSelect?.(point.city, point.district);
+        })
+        .addTo(group);
+    });
+    return;
+  }
+
+  TAIWAN_POINTS.forEach((point, index) => {
+    const start: [number, number] = [point.lat - 0.12, point.lon - 0.2];
+    const end: [number, number] = [point.lat + 0.12 + offset, point.lon + 0.24 + offset];
+    L.polyline([start, end], {
+      color: point.city === selectedCity ? "#047857" : "#0f766e",
+      opacity: 0.85,
+      weight: point.city === selectedCity ? 7 : 4 + index,
+      pane: "weatherOverlayPane",
+    })
+      .bindTooltip(`${point.label} 風速 ${12 + index * 3} km/h`)
+      .on("click", (event) => {
+        L.DomEvent.stopPropagation(event);
+        onLocationSelect?.(point.city, point.district);
+      })
+      .addTo(group);
+    L.circleMarker(end, {
+      radius: 5,
+      color: "#0f766e",
+      fillColor: "#ccfbf1",
+      fillOpacity: 0.9,
+      weight: 2,
+      pane: "weatherOverlayPane",
+    }).addTo(group);
   });
 }
 
