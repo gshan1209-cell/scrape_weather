@@ -2,6 +2,9 @@
 
 這是一個以台灣 CWA OpenData 為核心的 MVP monorepo，提供一週天氣、農事風險提醒，以及 Leaflet + OpenStreetMap 天氣地圖。
 
+## DEMO網址:https://scrape-weather-rfnhzwdm5-gshan1209-cells-projects.vercel.app/
+## 開發進度報告: https://github.com/gshan1209-cell/scrape_weather/blob/main/docs/scrape_weather_development_summary.md
+
 ## 技術架構
 
 - `apps/api`：FastAPI、Pydantic、httpx、SQLAlchemy-ready models
