@@ -8,26 +8,17 @@ import { MapFloatingAdvice } from "./MapFloatingAdvice";
 import { MapProviderFallback } from "./MapProviderFallback";
 
 type WindyStore = {
-  set: (key: string, value: string) => void;
+  set: (key: string, value: unknown, opts?: Record<string, unknown>) => void;
 };
 
 type WindyApi = {
   store: WindyStore;
 };
 
-type WindyInitOptions = {
-  key?: string;
-  lat: number;
-  lon: number;
-  zoom: number;
-  overlay: string;
-};
-
-declare global {
-  interface Window {
-    windyInit?: (options: WindyInitOptions, callback: (windyAPI: WindyApi) => void) => void;
-  }
-}
+type WindyInit = (
+  options: Record<string, unknown>,
+  callback: (windyAPI: WindyApi) => void,
+) => void;
 
 type Props = {
   config: WeatherMapConfig;
@@ -74,7 +65,9 @@ export function WindyMapClient({ config, city, district, crop, advisory, onLocat
       setStatus("載入 Windy script");
       return;
     }
-    if (!window.windyInit || !containerRef.current) {
+
+    const windyInit = window.windyInit as WindyInit | undefined;
+    if (!windyInit || !containerRef.current) {
       setStatus("初始化 Windy");
       return;
     }
@@ -82,7 +75,7 @@ export function WindyMapClient({ config, city, district, crop, advisory, onLocat
     try {
       initializedRef.current = true;
       setStatus("初始化 Windy");
-      window.windyInit(
+      windyInit(
         {
           key: config.windyApiKey,
           lat: config.defaultLat,
