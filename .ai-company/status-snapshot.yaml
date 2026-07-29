@@ -1,0 +1,132 @@
+schemaVersion: "1.0"
+repository: gshan1209-cell/scrape_weather
+reportedAt: "2026-07-29T19:48:00+08:00"
+statusConfidence: reported
+
+classification:
+  governanceLevel: L3
+  repoClass: product
+  systemType: agricultural-weather-product
+  owner: gshan1209-cell/scrape_weather
+  parentSystem: gshan1209-cell/AI-CEO-Control-Tower
+
+currentState:
+  lifecycle: active-pending-verification
+  phase: agricultural-weather-mvp
+  implementation: reported-mvp
+  verification: not-run-for-current-main
+  verifiedConformance: false
+  productionReadiness: not-ready
+  deployment: reported-not-rechecked
+  formalHealth: unknown
+  formalMaturity: not-calculated
+
+productCapabilities:
+  nextjsDashboard: reported
+  fastapiWeatherApi: reported
+  agriculturalAdvisoryApi: reported
+  leafletOpenStreetMap: reported
+  optionalWindyProvider: reported
+  liveCwaData: not-run
+  mockFallback: implemented-not-revalidated
+  mapFallback: implemented-not-revalidated
+  backendTests: not-run-for-current-main
+  frontendLint: not-run-for-current-main
+  frontendBuild: not-run-for-current-main
+  browserBehavior: not-run
+  deploymentHealth: not-rechecked
+
+weatherDataBoundary:
+  officialSource: Taiwan-CWA-OpenData
+  officialCanonicalOwner: external-CWA
+  applicationRole: product-projection-and-advisory
+  sharedAdapterCandidate: gshan1209-cell/cwa_scraper
+  sharedAdapterImplementationSha: 84884e915d24b93aff185b9a5ff37d030e44470d
+  sharedAdapterVerification: pending-test-only-issue-3
+  mockMayBeRepresentedAsLiveOfficialData: false
+
+providerBoundary:
+  defaultMapProvider: leaflet-openstreetmap
+  optionalMapProvider: windy
+  fallbackMustBeVisible: true
+  frontendWindyKeyIsPublic: true
+  frontendWindyKeyRequiresDomainRestriction: true
+  frontendWindyKeyRequiresQuotaRestriction: true
+  productionTlsVerificationRequired: true
+  tlsFailureMayBecomeTrustedData: false
+
+humanInterface:
+  status: implemented-verification-pending
+  refs:
+    - README.md
+    - docs/scrape_weather_development_summary.md
+    - apps/web
+
+agentInterface:
+  status: implemented-verification-pending
+  refs:
+    - AGENTS.md
+    - .ai-company/agent-context.yaml
+    - .ai-company/dual-interface.yaml
+
+attention:
+  blockers:
+    - id: live-cwa-key-required
+      severity: medium
+      status: conditional
+      title: Live CWA validation requires a backend-only API key in a controlled environment.
+  risks:
+    - id: mock-live-data-confusion
+      severity: high
+      status: open
+      title: Mock fallback data must not be represented as current official CWA observations or forecasts.
+    - id: tls-policy
+      severity: high
+      status: open
+      title: Production CWA integration must preserve TLS verification and fail closed.
+    - id: deployment-status
+      severity: medium
+      status: open
+      title: Current frontend and backend deployment health were not rechecked.
+    - id: public-windy-key
+      severity: medium
+      status: open
+      title: Browser-visible Windy Key requires domain and quota restrictions.
+    - id: shared-adapter-verification
+      severity: medium
+      status: open
+      title: Approved cwa_scraper shared Adapter candidate remains pending independent Test-only validation.
+
+resolvedDecisions:
+  - id: system-classification
+    status: human-approved
+    decision: L3 agricultural weather product, not a pure Adapter
+  - id: owner-parent
+    status: human-approved
+    decision: owner scrape_weather, parent AI-CEO-Control-Tower
+  - id: mock-live-boundary
+    status: enforced-in-governance-contract
+    decision: Mock cannot be treated as Live CWA Evidence
+
+evidence:
+  observedSourceSha: 61e21fd9ea442e48539610ff56908ad897834554
+  observedBranch: main
+  reviewedAt: "2026-07-29T19:48:00+08:00"
+  reviewer: ChatGPT-primary-development-agent
+  verificationStatus: not-run
+  evidenceRefs:
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/c7fe190295757626526b918cd2c0fbf329103c50
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/16
+    - github://gshan1209-cell/cwa_scraper/issues/3
+
+knownLimitations:
+  - Backend tests, Frontend lint／build and Browser behavior were not executed.
+  - No Live CWA or Windy request was executed and no API key was accessed.
+  - Frontend and backend deployment health were not rechecked.
+  - cwa_scraper independent Test-only validation remains pending.
+  - No Release, Deployment, Lifecycle or Conformance promotion is authorized.
+
+nextAction:
+  title: Validate exact-main Web/API build, Live／Mock status, map fallback, TLS and deployment health
+  owner: scrape-weather-owner
+  status: ready
