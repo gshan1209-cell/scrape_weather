@@ -1,11 +1,11 @@
 schemaVersion: "1.0"
 repository: gshan1209-cell/scrape_weather
-profile: minimal
+profile: operational
 standardRef:
   repository: gshan1209-cell/GitHub-Knowledge-Hub
   path: docs/HUMAN_AGENT_DUAL_INTERFACE_STANDARD.md
   version: "1.0.0"
-  mergeCommit: 0bbac3faa636aa073e8e59eac7dc3bc0ea0bd27b
+  decisionRecordCommit: 561c7eee0dfdfae4ae070ff47e9b383029c6268e
 
 humanEntry:
   status: implemented-verification-pending
@@ -17,15 +17,25 @@ humanEntry:
 
 agentEntry:
   status: implemented-verification-pending
-  type: context-file
-  path: .ai-company/agent-context.yaml
+  type: canonical-entry-and-context-file
+  path: AGENTS.md
+  contextFile: .ai-company/agent-context.yaml
   depths: [brief]
   additionalRefs:
-    - AGENTS.md
+    - .ai-company/status-snapshot.yaml
+
+classification:
+  governanceLevel: L3
+  systemType: agricultural-weather-product
+  owner: gshan1209-cell/scrape_weather
+  parentSystem: gshan1209-cell/AI-CEO-Control-Tower
 
 sourceModel:
+  canonicalOfficialWeatherSource: Taiwan-CWA-OpenData
+  sharedAdapterCandidate: gshan1209-cell/cwa_scraper
   canonicalRefs:
     - .ai-company/repo-manifest.yaml
+    - .ai-company/status-snapshot.yaml
     - README.md
     - AGENTS.md
     - docs/scrape_weather_development_summary.md
@@ -40,24 +50,39 @@ sourceModel:
     - README.md
     - .ai-company/agent-context.yaml
 
+weatherStateRules:
+  liveCwaAndMockMustBeDistinguishable: true
+  mockMayBeRepresentedAsOfficialLive: false
+  windyFallbackMustBeVisible: true
+  productionTlsVerificationRequired: true
+
 status:
-  consistency: not-tested
-  freshness: unknown
+  consistency: implementation-aligned-verification-pending
+  freshness: reviewed-source-recorded
   confidence: reported
   owner: scrape-weather-owner
-  nextAction: validate current Web/API build, CWA live and mock fallback behavior, map fallback, freshness, and deployment configuration
+  verifiedConformance: false
+  nextAction: validate exact-main Web/API build, CWA Live and Mock behavior, map fallback, TLS, freshness and deployment configuration
 
 verification:
   status: not-run
+  observedSourceSha: 61e21fd9ea442e48539610ff56908ad897834554
+  observedBranch: main
+  reviewedAt: "2026-07-29T19:48:00+08:00"
+  reviewer: ChatGPT-primary-development-agent
   evidenceRefs:
     - docs/scrape_weather_development_summary.md
-  sourceCommit: null
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/16
+    - github://gshan1209-cell/cwa_scraper/issues/3
 
 safety:
   readOnlyByDefault: true
+  mockMayBePromotedToLiveEvidence: false
+  silentFallback: forbidden
   automaticRepositoryWrite: false
   automaticIssueCreation: false
   automaticPullRequestCreation: false
+  automaticCrossRepositoryWrite: false
   automaticMerge: false
   automaticRelease: false
   automaticDeployment: false
@@ -65,5 +90,7 @@ safety:
     - credential-or-secret-change
     - cwa-dataset-provider-or-tls-policy-change
     - mock-live-classification-change
+    - shared-adapter-production-adoption
+    - lifecycle-or-conformance-promotion
     - cors-domain-or-public-api-change
     - release-or-deployment
