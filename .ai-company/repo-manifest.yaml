@@ -1,0 +1,73 @@
+schemaVersion: "1.0"
+
+identity:
+  repoId: scrape-weather
+  repository: gshan1209-cell/scrape_weather
+  repoClass: adapter
+  productId: scrape-weather
+  productLineId: agricultural-weather-intelligence
+
+ownership:
+  primaryOperatingUnit: system-development-studio
+  participatingUnits:
+    - ai-module-factory
+    - multimedia-studio
+  maintainer: scrape-weather-owner
+
+lifecycle:
+  status: active
+  portfolioClass: supporting
+  mode: agricultural-weather-mvp
+  currentPhase: agricultural-weather-mvp
+
+independentOperation:
+  build: true
+  test: true
+  deploy: true
+  release: true
+  requiresCeoRuntime: false
+  requiresStudioRuntime: false
+
+interfaces:
+  provides:
+    - agricultural-weather-dashboard-v1
+    - weekly-weather-api-v1
+    - weather-station-api-v1
+    - agricultural-advisory-api-v1
+  consumes:
+    - cwa-open-data-api-v1
+    - openstreetmap-tiles
+    - optional-windy-map-provider
+    - human-agent-dual-interface-standard-v1
+
+management:
+  managementPolicy: optional
+  managementStatus: managed
+  managementReason: reusable agricultural weather application and data adapter
+  ceoReportingEnabled: true
+  dualInterfaceProfile: minimal
+  sourceOfTruthPaths:
+    - README.md
+    - AGENTS.md
+    - docs/scrape_weather_development_summary.md
+    - apps/api/
+    - apps/web/
+
+status:
+  implementation: reported-mvp
+  humanInterface: implemented-verification-pending
+  agentInterface: implemented-verification-pending
+  runtime: not-run-for-current-adoption-change
+  deployment: reported-not-rechecked
+  verification: not-run
+  productionReadiness: not-ready
+
+security:
+  backendCredentialStorageOnly: true
+  cwaKeyInBrowserOrGit: forbidden
+  windyPublicKeyRequiresDomainAndQuotaRestriction: true
+  productionTlsVerificationRequired: true
+  automaticCrossRepositoryWrites: disabled
+  automaticMerge: disabled
+  automaticRelease: disabled
+  automaticDeployment: disabled

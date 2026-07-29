@@ -1,0 +1,133 @@
+schemaVersion: "1.0"
+systemIdentity:
+  repository: gshan1209-cell/scrape_weather
+  systemId: scrape-weather
+  systemType: adapter
+  profile: minimal
+  roles:
+    - agricultural-weather-dashboard
+    - cwa-weather-application-adapter
+    - map-provider-fallback-application
+
+context:
+  generatedAt: "2026-07-29T15:33:00+08:00"
+  freshness: unknown
+  depth: brief
+  digest: sha256:e763356bfe4f59e48a38e5080d557610334409aa5cbe1be8416015bd58a4460b
+  digestBasis: repository-profile-phase-status-next-action-and-source-references
+  changedSinceDigest: null
+  canonical: false
+  readOnly: true
+  status: baseline-recorded
+
+briefing:
+  headline: Scrape Weather reports a deployed agricultural weather MVP with Next.js, FastAPI, CWA data, Leaflet and optional Windy fallback; current build, live-data, fallback and deployment state were not revalidated in this adoption change.
+  currentPhase: agricultural-weather-mvp
+  highestPriority:
+    - validate current Backend tests and Frontend lint／build
+    - distinguish Live CWA data from Mock fallback in all Human and Agent views
+    - validate Leaflet／Windy fallback, data freshness and production configuration
+
+state:
+  status: implemented-verification-pending
+  phase: agricultural-weather-mvp
+  progress: null
+  confidence: reported
+  integrity: not-tested
+
+attention:
+  blockers:
+    - id: live-cwa-key-required
+      status: conditional
+      severity: medium
+      title: Live CWA validation requires a valid backend-only CWA API key in a controlled environment.
+  risks:
+    - id: mock-live-data-confusion
+      status: open
+      severity: high
+      title: Mock fallback data must not be represented as current official CWA observations or forecasts.
+    - id: deployment-status-not-rechecked
+      status: open
+      severity: medium
+      title: README contains a Vercel demo URL, but current frontend and backend deployment health were not rechecked.
+    - id: frontend-visible-windy-key
+      status: open
+      severity: medium
+      title: NEXT_PUBLIC_WINDY_API_KEY is browser-visible and requires domain and quota restrictions.
+    - id: tls-policy
+      status: open
+      severity: high
+      title: Production CWA integration should preserve TLS verification and must not normalize certificate failures to trusted data.
+  driftFindings: []
+  pullRequests: []
+
+execution:
+  nextActions:
+    - id: validate-scrape-weather-current-state
+      priority: P0
+      status: ready
+      owner: scrape-weather-owner
+      title: Validate current Web/API build, CWA live and mock fallback behavior, map fallback, freshness, and deployment configuration.
+  owners:
+    - id: scrape-weather-owner
+      responsibility: application-runtime-weather-projection-map-provider-and-release
+    - id: ai-workstream
+      responsibility: dual-interface-template-planner-validator-and-adoption-flow
+    - id: github-knowledge-hub
+      responsibility: architecture-standard-and-compliance-assessment
+    - id: ai-ceo-control-tower
+      responsibility: portfolio-observation-and-global-context
+    - id: codex
+      responsibility: backend-frontend-browser-live-api-and-deployment-validation-when-required
+  dependencies:
+    - source: scrape-weather
+      dependsOn: cwa-open-data-api-v1
+      purpose: official forecast and station data
+    - source: scrape-weather
+      dependsOn: openstreetmap-tiles
+      purpose: default map base layer
+    - source: scrape-weather
+      dependsOn: optional-windy-map-provider
+      purpose: optional advanced map provider with Leaflet fallback
+    - source: scrape-weather
+      dependsOn: gshan1209-cell/GitHub-Knowledge-Hub@0bbac3faa636aa073e8e59eac7dc3bc0ea0bd27b
+      purpose: canonical Human／Agent dual-interface standard
+  allowedOperations:
+    - read-derived-context
+    - inspect-source-and-official-data-references
+    - prepare-change-on-feature-branch
+    - run-backend-frontend-and-fixture-validation
+    - run-redacted-live-provider-and-browser-validation-in-controlled-environment
+    - prepare-pull-request-with-evidence
+  forbiddenOperations:
+    - treat-derived-context-or-mock-data-as-official-canonical-data
+    - expose-or-persist-cwa-or-private-windy-credentials
+    - mark-live-or-deployment-validation-as-passed-without-execution
+    - silently-fallback-without-status
+    - disable-production-tls-verification-as-default
+    - automatic-merge-release-or-deployment
+  humanApprovalRequiredFor:
+    - credential-or-secret-change
+    - cwa-dataset-provider-or-tls-policy-change
+    - mock-live-classification-change
+    - cors-domain-or-public-api-change
+    - release-or-deployment
+  primaryDevelopmentAgent: current-task-owner
+  codexRole: backend-frontend-browser-live-api-and-deployment-validation-when-required
+
+evidence:
+  sourceCommit: null
+  sourceRefs:
+    - README.md
+    - AGENTS.md
+    - docs/scrape_weather_development_summary.md
+    - apps/api/
+    - apps/web/
+    - .ai-company/repo-manifest.yaml
+  verificationRefs: []
+
+limitations:
+  - Backend tests, Frontend lint／build and Browser behavior were not executed in this adoption change.
+  - No live CWA or Windy request was executed and no API key was accessed.
+  - Frontend and backend deployment health were not rechecked.
+  - Digest is a static baseline; automatic regeneration and since-digest comparison are not implemented.
