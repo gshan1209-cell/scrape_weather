@@ -2,38 +2,48 @@ schemaVersion: "1.0"
 systemIdentity:
   repository: gshan1209-cell/scrape_weather
   systemId: scrape-weather
-  systemType: adapter
-  profile: minimal
+  systemType: agricultural-weather-product
+  governanceLevel: L3
+  profile: operational
+  parentSystem: gshan1209-cell/AI-CEO-Control-Tower
   roles:
-    - agricultural-weather-dashboard
-    - cwa-weather-application-adapter
+    - agricultural-weather-dashboard-product
+    - cwa-weather-application
     - map-provider-fallback-application
 
 context:
-  generatedAt: "2026-07-29T15:33:00+08:00"
-  freshness: unknown
+  generatedAt: "2026-07-29T19:48:00+08:00"
+  freshness: reviewed-source-recorded
   depth: brief
-  digest: sha256:e763356bfe4f59e48a38e5080d557610334409aa5cbe1be8416015bd58a4460b
-  digestBasis: repository-profile-phase-status-next-action-and-source-references
-  changedSinceDigest: null
   canonical: false
   readOnly: true
-  status: baseline-recorded
+  status: implementation-complete-verification-pending
 
 briefing:
-  headline: Scrape Weather reports a deployed agricultural weather MVP with Next.js, FastAPI, CWA data, Leaflet and optional Windy fallback; current build, live-data, fallback and deployment state were not revalidated in this adoption change.
+  headline: Scrape Weather is an L3 agricultural weather product with Next.js, FastAPI, CWA data, Leaflet and optional Windy integration; current build, Live CWA, Mock fallback, map fallback, TLS and deployment health remain unverified.
   currentPhase: agricultural-weather-mvp
   highestPriority:
     - validate current Backend tests and Frontend lint／build
     - distinguish Live CWA data from Mock fallback in all Human and Agent views
-    - validate Leaflet／Windy fallback, data freshness and production configuration
+    - validate Leaflet／Windy fallback, data freshness, TLS and deployment configuration
 
 state:
   status: implemented-verification-pending
   phase: agricultural-weather-mvp
   progress: null
   confidence: reported
-  integrity: not-tested
+  integrity: not-tested-for-current-main
+  lifecycle: active-pending-verification
+  verifiedConformance: false
+  productionReadiness: not-ready
+
+classification:
+  previousSystemType: adapter
+  approvedSystemType: agricultural-weather-product
+  governanceLevel: L3
+  owner: gshan1209-cell/scrape_weather
+  parentSystem: gshan1209-cell/AI-CEO-Control-Tower
+  rationale: repository-contains-web-api-map-and-deployment-entry
 
 attention:
   blockers:
@@ -57,7 +67,15 @@ attention:
     - id: tls-policy
       status: open
       severity: high
-      title: Production CWA integration should preserve TLS verification and must not normalize certificate failures to trusted data.
+      title: Production CWA integration must preserve TLS verification and must not normalize certificate failures to trusted data.
+    - id: shared-adapter-verification-pending
+      status: open
+      severity: medium
+      title: cwa_scraper is the approved shared adapter candidate, but its exact-main Test-only verification remains pending.
+  resolvedFindings:
+    - id: adapter-product-classification
+      status: human-approved
+      title: Repository is classified as an L3 agricultural weather product rather than a pure Adapter.
   driftFindings: []
   pullRequests: []
 
@@ -67,16 +85,21 @@ execution:
       priority: P0
       status: ready
       owner: scrape-weather-owner
-      title: Validate current Web/API build, CWA live and mock fallback behavior, map fallback, freshness, and deployment configuration.
+      title: Validate Web/API build, CWA Live and Mock behavior, map fallback, TLS, freshness and deployment configuration on exact Main.
+    - id: assess-cwa-shared-adapter-consumption
+      priority: P1
+      status: blocked-by-cwa-test-only
+      owner: system-development-studio
+      title: Assess integration with the shared cwa_scraper Adapter only after its Test-only Evidence passes.
   owners:
     - id: scrape-weather-owner
-      responsibility: application-runtime-weather-projection-map-provider-and-release
+      responsibility: product-runtime-weather-projection-map-provider-user-experience-and-release
     - id: ai-workstream
-      responsibility: dual-interface-template-planner-validator-and-adoption-flow
+      responsibility: company-development-execution-and-capability-governance
     - id: github-knowledge-hub
-      responsibility: architecture-standard-and-compliance-assessment
+      responsibility: canonical-global-registry-architecture-standard-and-compliance-evidence
     - id: ai-ceo-control-tower
-      responsibility: portfolio-observation-and-global-context
+      responsibility: parent-portfolio-read-model-and-major-gates
     - id: codex
       responsibility: backend-frontend-browser-live-api-and-deployment-validation-when-required
   dependencies:
@@ -84,14 +107,20 @@ execution:
       dependsOn: cwa-open-data-api-v1
       purpose: official forecast and station data
     - source: scrape-weather
+      dependsOn: gshan1209-cell/cwa_scraper@84884e915d24b93aff185b9a5ff37d030e44470d
+      purpose: approved shared Adapter candidate; independent Test-only verification pending
+    - source: scrape-weather
       dependsOn: openstreetmap-tiles
       purpose: default map base layer
     - source: scrape-weather
       dependsOn: optional-windy-map-provider
-      purpose: optional advanced map provider with Leaflet fallback
+      purpose: optional advanced map provider with visible Leaflet fallback
     - source: scrape-weather
-      dependsOn: gshan1209-cell/GitHub-Knowledge-Hub@0bbac3faa636aa073e8e59eac7dc3bc0ea0bd27b
-      purpose: canonical Human／Agent dual-interface standard
+      dependsOn: gshan1209-cell/AI-Workstream@5f4e70f907cc81d6d7627e587940d014430879f2
+      purpose: company Development Execution Responsibility
+    - source: scrape-weather
+      dependsOn: gshan1209-cell/GitHub-Knowledge-Hub@c7fe190295757626526b918cd2c0fbf329103c50
+      purpose: canonical Evidence Contract and Global System Registry
   allowedOperations:
     - read-derived-context
     - inspect-source-and-official-data-references
@@ -103,20 +132,28 @@ execution:
     - treat-derived-context-or-mock-data-as-official-canonical-data
     - expose-or-persist-cwa-or-private-windy-credentials
     - mark-live-or-deployment-validation-as-passed-without-execution
-    - silently-fallback-without-status
+    - silently-fallback-without-visible-status
     - disable-production-tls-verification-as-default
+    - automatically-consume-unverified-shared-adapter
+    - automatic-cross-repository-write
     - automatic-merge-release-or-deployment
   humanApprovalRequiredFor:
     - credential-or-secret-change
     - cwa-dataset-provider-or-tls-policy-change
     - mock-live-classification-change
+    - shared-adapter-production-adoption
+    - lifecycle-or-conformance-promotion
     - cors-domain-or-public-api-change
     - release-or-deployment
   primaryDevelopmentAgent: current-task-owner
   codexRole: backend-frontend-browser-live-api-and-deployment-validation-when-required
 
 evidence:
-  sourceCommit: null
+  observedSourceSha: 61e21fd9ea442e48539610ff56908ad897834554
+  observedBranch: main
+  reviewedAt: "2026-07-29T19:48:00+08:00"
+  reviewer: ChatGPT-primary-development-agent
+  verificationStatus: not-run
   sourceRefs:
     - README.md
     - AGENTS.md
@@ -124,10 +161,14 @@ evidence:
     - apps/api/
     - apps/web/
     - .ai-company/repo-manifest.yaml
+    - .ai-company/status-snapshot.yaml
+  evidenceRefs:
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/16
+    - github://gshan1209-cell/cwa_scraper/issues/3
   verificationRefs: []
 
 limitations:
-  - Backend tests, Frontend lint／build and Browser behavior were not executed in this adoption change.
-  - No live CWA or Windy request was executed and no API key was accessed.
+  - Backend tests, Frontend lint／build and Browser behavior were not executed.
+  - No Live CWA or Windy request was executed and no API key was accessed.
   - Frontend and backend deployment health were not rechecked.
-  - Digest is a static baseline; automatic regeneration and since-digest comparison are not implemented.
+  - cwa_scraper Test-only validation remains pending.

@@ -3,22 +3,27 @@ schemaVersion: "1.0"
 identity:
   repoId: scrape-weather
   repository: gshan1209-cell/scrape_weather
-  repoClass: adapter
+  repoClass: product
+  systemType: agricultural-weather-product
+  governanceLevel: L3
   productId: scrape-weather
   productLineId: agricultural-weather-intelligence
 
 ownership:
   primaryOperatingUnit: system-development-studio
+  ownerSystem: gshan1209-cell/scrape_weather
+  parentSystem: gshan1209-cell/AI-CEO-Control-Tower
   participatingUnits:
     - ai-module-factory
     - multimedia-studio
   maintainer: scrape-weather-owner
 
 lifecycle:
-  status: active
+  status: active-pending-verification
   portfolioClass: supporting
   mode: agricultural-weather-mvp
   currentPhase: agricultural-weather-mvp
+  verifiedConformance: false
 
 independentOperation:
   build: true
@@ -36,19 +41,46 @@ interfaces:
     - agricultural-advisory-api-v1
   consumes:
     - cwa-open-data-api-v1
+    - cwa-shared-weather-adapter-candidate-v1
     - openstreetmap-tiles
     - optional-windy-map-provider
     - human-agent-dual-interface-standard-v1
 
+weatherDataBoundary:
+  canonicalOfficialSource: Taiwan-CWA-OpenData
+  sharedAdapterCandidate: gshan1209-cell/cwa_scraper
+  sharedAdapterStatus: implementation-complete-verification-pending
+  mockDataMayBeRepresentedAsLive: false
+  silentFallback: forbidden
+
+mapProviderBoundary:
+  defaultProvider: leaflet-openstreetmap
+  optionalProvider: windy
+  fallbackMustBeVisible: true
+  publicWindyKeyRequiresDomainRestriction: true
+  publicWindyKeyRequiresQuotaRestriction: true
+
+minimumEvidenceContract:
+  humanOverview: README.md
+  canonicalAgentEntry: AGENTS.md
+  repoManifest: .ai-company/repo-manifest.yaml
+  agentContext: .ai-company/agent-context.yaml
+  statusSnapshot: .ai-company/status-snapshot.yaml
+
 management:
-  managementPolicy: optional
+  managementPolicy: required
   managementStatus: managed
-  managementReason: reusable agricultural weather application and data adapter
+  managementReason: L3 agricultural weather product with Web, API, map, deployment entry and reusable data integrations
   ceoReportingEnabled: true
-  dualInterfaceProfile: minimal
+  dualInterfaceProfile: operational
+  statusSnapshotPath: .ai-company/status-snapshot.yaml
+  agentContextPath: .ai-company/agent-context.yaml
   sourceOfTruthPaths:
     - README.md
     - AGENTS.md
+    - .ai-company/repo-manifest.yaml
+    - .ai-company/agent-context.yaml
+    - .ai-company/status-snapshot.yaml
     - docs/scrape_weather_development_summary.md
     - apps/api/
     - apps/web/
@@ -57,9 +89,13 @@ status:
   implementation: reported-mvp
   humanInterface: implemented-verification-pending
   agentInterface: implemented-verification-pending
-  runtime: not-run-for-current-adoption-change
+  runtime: not-run-for-current-main
   deployment: reported-not-rechecked
+  liveCwaValidation: not-run
+  mockFallbackValidation: not-run
+  mapFallbackValidation: not-run
   verification: not-run
+  verifiedConformance: false
   productionReadiness: not-ready
 
 security:
@@ -67,7 +103,19 @@ security:
   cwaKeyInBrowserOrGit: forbidden
   windyPublicKeyRequiresDomainAndQuotaRestriction: true
   productionTlsVerificationRequired: true
+  tlsFailureMayBecomeTrustedData: false
   automaticCrossRepositoryWrites: disabled
   automaticMerge: disabled
   automaticRelease: disabled
   automaticDeployment: disabled
+
+evidence:
+  observedSourceSha: 61e21fd9ea442e48539610ff56908ad897834554
+  observedBranch: main
+  reviewedAt: "2026-07-29T19:48:00+08:00"
+  reviewer: ChatGPT-primary-development-agent
+  verificationStatus: not-run
+  evidenceRefs:
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/c7fe190295757626526b918cd2c0fbf329103c50
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/16
+    - github://gshan1209-cell/cwa_scraper/commit/84884e915d24b93aff185b9a5ff37d030e44470d
