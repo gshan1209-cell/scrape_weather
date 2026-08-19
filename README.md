@@ -15,7 +15,7 @@
 
 複製 `.env.example` 為 `.env`，如果要讀取即時 CWA 資料，請設定 `CWA_API_KEY`。沒有 API key 時，後端會回傳固定 mock fallback 資料，JSON 格式與正式資料一致。
 
-CWA HTTPS 憑證驗證必須保持啟用。若本機 Python 連線 CWA 時出現 `CERTIFICATE_VERIFY_FAILED`，請修正作業系統／Python trust store、企業 Proxy 或受信任 CA 設定；不要停用 TLS 憑證驗證。若環境嘗試設定 `CWA_VERIFY_SSL=false`，後端設定驗證會 Fail Closed，而不是以不安全連線繼續執行。
+CWA HTTPS 憑證驗證必須保持啟用。若本機 Python 連線 CWA 時出現 `CERTIFICATE_VERIFY_FAILED`，請修正作業系統／Python trust store、企業 Proxy 或受信任 CA 設定；不要停用 TLS 憑證驗證。若環境將 `CWA_VERIFY_SSL` 設為 `false`，後端設定驗證會 Fail Closed，而不是以不安全連線繼續執行。
 
 天氣地圖 provider：
 
