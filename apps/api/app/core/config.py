@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,7 +10,7 @@ class Settings(BaseSettings):
 
     CWA_API_KEY: str | None = None
     CWA_WEEKLY_DATASET_ID: str = "F-D0047-091"
-    CWA_VERIFY_SSL: bool = True
+    CWA_VERIFY_SSL: Literal[True] = True
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
     APP_ENV: str = "development"
