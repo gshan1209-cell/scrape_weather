@@ -13,7 +13,7 @@
 
 ## 2. 系統定位
 
-本 Repository 是以中央氣象署 CWA OpenData 為主要資料來源的農事天氣 MVP，包含：
+本 Repository 是已核准分類的 **L3 農事天氣產品**，以中央氣象署 CWA OpenData 為主要資料來源，包含：
 
 - Next.js 農事天氣儀表板。
 - FastAPI 天氣與農事提醒 API。
@@ -46,6 +46,7 @@
 - Windy 失敗後切回 Leaflet 時，必須顯示 Fallback 狀態，不得靜默降級。
 - README／開發報告中的完成描述不等於目前 Head 已重新驗證。
 - 未執行 Backend、Frontend Build、Browser、Live CWA 或 Deployment 驗證時，狀態保持 `not-run`。
+- Shared `cwa_scraper` 目前 Main 為 `7656e4aaa9a05c3b1492a28fd1a78b167e56122b`；TLS/live validation 是 `AI-Workstream#242`，governance validation 是 `AI-Workstream#243` Revision 2。兩者皆 pending，不得表示為 PASS，也不得自動升級為 Production dependency。
 
 ## 5. 安全規則
 
@@ -55,8 +56,36 @@
 - 不得自動修改 CORS、Credential、Provider、Dataset、Production Deployment 或公開 URL。
 - 不得以 Mock 成功取代 Live Integration Evidence。
 - 不得自動 Merge、Release 或 Deployment。
+- `CWA_VERIFY_SSL=false` 的現存開發模式由 Security Issue #4 獨立管理；本治理收斂不得順帶修改 TLS Policy。
 
-## 6. 驗證入口
+## 6. Development / Validation Boundary
+
+一個 Implementation/Fix Scope 使用一個 Branch 與一個正常 Repository-local PR。Primary Development Agent 負責實作、remediation 與可用的 Sandbox-first/focused validation；PR 自身 Merge Gate滿足後可合併 Main，Pending Supplemental Validation 不凍結 Main。
+
+需要 Backend／Frontend／Browser／Live API／Deployment 等獨立驗證時，使用 AI-Workstream Post-Main Validation Task。Qualified independent validator 必須讀 execution-time latest Main、記錄 exact `testedMainSha`，只回傳 Evidence／Findings；不得 Repository Write、Remediation、建立 Branch／PR、Merge 或關閉 Source Issue。
+
+Current exact authority：
+
+```yaml
+policy: DS-003@2.1.1
+responsibility: RESP-DEV-AGENT-001@2.1.1
+validationTaskProcedure: PROC-VALIDATION-TASK-001@2.1.1
+codexProcedure: PROC-CODEX-POST-MAIN-VALIDATION-001@1.1.1
+chatgptAuditProcedure: PROC-CHATGPT-AUDIT-001@2.1.1
+issueClosureProcedure: PROC-ISSUE-CLOSURE-001@2.1.1
+testPullRequest: null
+validatorRepositoryWrite: false
+validatorRemediation: false
+validatorBranchCreation: false
+validatorPullRequestCreation: false
+validatorMerge: false
+validatorSourceIssueClosure: false
+pendingValidationFreezesMain: false
+```
+
+Known GitHub Actions account-level quota／billing／spending-limit pre-execution blocker 使用 `WAIVED_BY_OWNER / NOT_RUN`，不得主動 rerun 只為重現相同 blocker，也不得表示為 PASS。
+
+## 7. 驗證入口
 
 Backend：
 
@@ -73,14 +102,15 @@ npm run lint
 npm run build
 ```
 
-需要 CWA／Windy Key、瀏覽器、Vercel 或正式後端環境的驗證，應在受控環境執行並提供去敏 Evidence。
+需要 CWA／Windy Key、瀏覽器、Vercel 或正式後端環境的驗證，只能在受控環境執行並提供去敏 Evidence；沒有必要環境時維持 `blocked/not-run`。
 
-## 7. 人工核准邊界
+## 8. 人工核准邊界
 
 以下操作需人工核准：
 
 - 正式 Credential／Secret 變更。
 - CWA Dataset、Weather Provider 或 TLS Policy 變更。
 - Mock／Live 資料判定邏輯變更。
+- Shared Adapter Production Adoption。
 - CORS、正式 Domain、公開 API 或 Deployment 變更。
 - Release 與正式資料發布。
