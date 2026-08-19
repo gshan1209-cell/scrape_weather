@@ -36,16 +36,22 @@ def test_cwa_http_clients_never_allow_verify_false_or_runtime_toggle() -> None:
     assert async_client_calls, "Expected at least one httpx.AsyncClient call"
     for call in async_client_calls:
         verify_keywords = [kw for kw in call.keywords if kw.arg == "verify"]
-        if verify_keywords:
-            assert len(verify_keywords) == 1
-            value = verify_keywords[0].value
-            assert isinstance(value, ast.Constant) and value.value is True
+        assert len(verify_keywords) == 1
+        value = verify_keywords[0].value
+        assert isinstance(value, ast.Constant) and value.value is True
 
 
-def test_human_and_env_guidance_do_not_offer_tls_bypass() -> None:
+def test_human_and_env_guidance_enforce_fail_closed_tls() -> None:
     readme = read(README)
     env_example = read(ENV_EXAMPLE)
-    assert "CWA_VERIFY_SSL=false" not in readme
+
+    # Historical insecure guidance must never return.
+    assert "可暫時在 `.env` 設定 `CWA_VERIFY_SSL=false`" not in readme
+    assert "Set false only for local development" not in env_example
     assert "CWA_VERIFY_SSL=false" not in env_example
-    assert "關閉 TLS" not in readme
-    assert "停用 TLS" not in readme
+
+    # Current guidance must explicitly preserve the fail-closed contract.
+    assert "Fail Closed" in readme
+    assert "不要停用 TLS 憑證驗證" in readme
+    assert "must remain true" in env_example
+    assert "Setting false is rejected" in env_example
