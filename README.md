@@ -15,7 +15,7 @@
 
 複製 `.env.example` 為 `.env`，如果要讀取即時 CWA 資料，請設定 `CWA_API_KEY`。沒有 API key 時，後端會回傳固定 mock fallback 資料，JSON 格式與正式資料一致。
 
-若本機 Python 連線 CWA 時出現 `CERTIFICATE_VERIFY_FAILED`，開發環境可暫時在 `.env` 設定 `CWA_VERIFY_SSL=false`。正式環境建議維持 `true`，並改用正確的系統憑證或受信任 CA 設定。
+CWA HTTPS 憑證驗證必須保持啟用。若本機 Python 連線 CWA 時出現 `CERTIFICATE_VERIFY_FAILED`，請修正作業系統／Python trust store、企業 Proxy 或受信任 CA 設定；不要停用 TLS 憑證驗證。若環境嘗試設定 `CWA_VERIFY_SSL=false`，後端設定驗證會 Fail Closed，而不是以不安全連線繼續執行。
 
 天氣地圖 provider：
 
@@ -107,5 +107,7 @@ npm run build
 ## 安全注意事項
 
 請把真正的 CWA API key 放在 `.env`，不要提交到 Git。前端只會讀取 `NEXT_PUBLIC_API_BASE_URL`，不會取得 CWA key。
+
+CWA TLS 憑證驗證是強制安全邊界；正式與開發環境都不得透過設定停用。憑證鏈問題必須修正 trust store／Proxy／受信任 CA，而不是繞過 HTTPS 驗證。
 
 Windy Map Forecast key 屬於前端可見金鑰；正式環境請在 Windy 帳號中設定網域限制與用量限制。MVP 預設地圖使用 OpenStreetMap 圖磚與 mock 天氣 overlay。
