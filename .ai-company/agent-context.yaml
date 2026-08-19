@@ -12,20 +12,20 @@ systemIdentity:
     - map-provider-fallback-application
 
 context:
-  generatedAt: "2026-07-29T19:48:00+08:00"
-  freshness: reviewed-source-recorded
+  generatedAt: "2026-08-19T17:00:00+08:00"
+  freshness: observed-source-recorded
   depth: brief
   canonical: false
   readOnly: true
   status: implementation-complete-verification-pending
 
 briefing:
-  headline: Scrape Weather is an L3 agricultural weather product with Next.js, FastAPI, CWA data, Leaflet and optional Windy integration; current build, Live CWA, Mock fallback, map fallback, TLS and deployment health remain unverified.
+  headline: Scrape Weather is an L3 agricultural weather product with Next.js, FastAPI, CWA data, Leaflet and optional Windy integration; current Web/API, Live CWA, Mock fallback, map fallback, TLS and deployment health remain unverified. Shared cwa_scraper is current at 7656e4aaa... with validation Tasks #242/#243 still pending.
   currentPhase: agricultural-weather-mvp
   highestPriority:
-    - validate current Backend tests and Frontend lint／build
+    - validate current Backend tests and Frontend lint/build on execution-time latest Main
     - distinguish Live CWA data from Mock fallback in all Human and Agent views
-    - validate Leaflet／Windy fallback, data freshness, TLS and deployment configuration
+    - validate map fallback, data freshness and deployment configuration without changing TLS policy governed by Security Issue #4
 
 state:
   status: implemented-verification-pending
@@ -45,12 +45,25 @@ classification:
   parentSystem: gshan1209-cell/AI-CEO-Control-Tower
   rationale: repository-contains-web-api-map-and-deployment-entry
 
+sharedAdapter:
+  repository: gshan1209-cell/cwa_scraper
+  mainSha: 7656e4aaa9a05c3b1492a28fd1a78b167e56122b
+  tlsLiveValidationTask: AI-Workstream#242
+  governanceValidationTask: AI-Workstream#243
+  sharedAdapterValidationStatus: pending
+  sharedAdapterProductionAdoption: blocked
+  productionStatus: blocked-pending-independent-live-evidence
+
 attention:
   blockers:
     - id: live-cwa-key-required
       status: conditional
       severity: medium
       title: Live CWA validation requires a valid backend-only CWA API key in a controlled environment.
+    - id: tls-policy-owner-decision
+      status: blocked-owner-policy-decision
+      severity: high
+      title: Existing CWA_VERIFY_SSL=false development path is governed separately by Security Issue #4 and must not be changed incidentally.
   risks:
     - id: mock-live-data-confusion
       status: open
@@ -68,10 +81,10 @@ attention:
       status: open
       severity: high
       title: Production CWA integration must preserve TLS verification and must not normalize certificate failures to trusted data.
-    - id: shared-adapter-verification-pending
+    - id: shared-adapter-validation
       status: open
       severity: medium
-      title: cwa_scraper is the approved shared adapter candidate, but its exact-main Test-only verification remains pending.
+      title: cwa_scraper is the approved shared Adapter candidate, but current #242/#243 validation remains pending and production adoption is blocked.
   resolvedFindings:
     - id: adapter-product-classification
       status: human-approved
@@ -80,17 +93,32 @@ attention:
   pullRequests: []
 
 execution:
+  developmentExecutionResponsibility:
+    companyOwner: gshan1209-cell/AI-Workstream
+    localOwner: scrape-weather-owner
+    canonicalPolicy: DS-003@2.1.1
+    responsibility: RESP-DEV-AGENT-001@2.1.1
+    validationTaskProcedure: PROC-VALIDATION-TASK-001@2.1.1
+    codexProcedure: PROC-CODEX-POST-MAIN-VALIDATION-001@1.1.1
+    chatgptAuditProcedure: PROC-CHATGPT-AUDIT-001@2.1.1
+    issueClosureProcedure: PROC-ISSUE-CLOSURE-001@2.1.1
+    primaryAgentDefault: current-task-owner
+    codexRole: post-main-read-only-supplemental-validation
+    testPullRequest: null
+    validatorRepositoryWrite: false
+    validatorRemediation: false
+    pendingValidationFreezesMain: false
   nextActions:
     - id: validate-scrape-weather-current-state
       priority: P0
       status: ready
       owner: scrape-weather-owner
-      title: Validate Web/API build, CWA Live and Mock behavior, map fallback, TLS, freshness and deployment configuration on exact Main.
+      title: Validate Web/API build, CWA Live and Mock behavior, map fallback, freshness and deployment configuration on execution-time latest Main.
     - id: assess-cwa-shared-adapter-consumption
       priority: P1
-      status: blocked-by-cwa-test-only
+      status: blocked-by-current-adapter-validation
       owner: system-development-studio
-      title: Assess integration with the shared cwa_scraper Adapter only after its Test-only Evidence passes.
+      title: Assess production adoption of shared cwa_scraper only after applicable AI-Workstream #242/#243 Evidence is accepted.
   owners:
     - id: scrape-weather-owner
       responsibility: product-runtime-weather-projection-map-provider-user-experience-and-release
@@ -100,15 +128,15 @@ execution:
       responsibility: canonical-global-registry-architecture-standard-and-compliance-evidence
     - id: ai-ceo-control-tower
       responsibility: parent-portfolio-read-model-and-major-gates
-    - id: codex
-      responsibility: backend-frontend-browser-live-api-and-deployment-validation-when-required
+    - id: independent-validator
+      responsibility: post-main-read-only-validation-evidence-and-findings
   dependencies:
     - source: scrape-weather
       dependsOn: cwa-open-data-api-v1
       purpose: official forecast and station data
     - source: scrape-weather
-      dependsOn: gshan1209-cell/cwa_scraper@84884e915d24b93aff185b9a5ff37d030e44470d
-      purpose: approved shared Adapter candidate; independent Test-only verification pending
+      dependsOn: gshan1209-cell/cwa_scraper@7656e4aaa9a05c3b1492a28fd1a78b167e56122b
+      purpose: approved shared Adapter candidate; current TLS/live and governance validation remain pending
     - source: scrape-weather
       dependsOn: openstreetmap-tiles
       purpose: default map base layer
@@ -116,11 +144,11 @@ execution:
       dependsOn: optional-windy-map-provider
       purpose: optional advanced map provider with visible Leaflet fallback
     - source: scrape-weather
-      dependsOn: gshan1209-cell/AI-Workstream@5f4e70f907cc81d6d7627e587940d014430879f2
+      dependsOn: gshan1209-cell/AI-Workstream@696c0dcbaaf5a5ac40e80de9df2b0d428fcc3d7d
       purpose: company Development Execution Responsibility
     - source: scrape-weather
-      dependsOn: gshan1209-cell/GitHub-Knowledge-Hub@c7fe190295757626526b918cd2c0fbf329103c50
-      purpose: canonical Evidence Contract and Global System Registry
+      dependsOn: gshan1209-cell/GitHub-Knowledge-Hub@9fd78ea2718ee2e745554c65c0ccb98d98ee46f5
+      purpose: current canonical governance authority
   allowedOperations:
     - read-derived-context
     - inspect-source-and-official-data-references
@@ -133,10 +161,11 @@ execution:
     - expose-or-persist-cwa-or-private-windy-credentials
     - mark-live-or-deployment-validation-as-passed-without-execution
     - silently-fallback-without-visible-status
-    - disable-production-tls-verification-as-default
     - automatically-consume-unverified-shared-adapter
     - automatic-cross-repository-write
     - automatic-merge-release-or-deployment
+    - validator-repository-write
+    - validator-remediation
   humanApprovalRequiredFor:
     - credential-or-secret-change
     - cwa-dataset-provider-or-tls-policy-change
@@ -146,12 +175,12 @@ execution:
     - cors-domain-or-public-api-change
     - release-or-deployment
   primaryDevelopmentAgent: current-task-owner
-  codexRole: backend-frontend-browser-live-api-and-deployment-validation-when-required
+  codexRole: post-main-read-only-supplemental-validation-when-required
 
 evidence:
-  observedSourceSha: 61e21fd9ea442e48539610ff56908ad897834554
+  observedSourceSha: 34f5c9166d62802ad8809a875b91f78c29e4eca7
   observedBranch: main
-  reviewedAt: "2026-07-29T19:48:00+08:00"
+  reviewedAt: "2026-08-19T17:00:00+08:00"
   reviewer: ChatGPT-primary-development-agent
   verificationStatus: not-run
   sourceRefs:
@@ -163,12 +192,18 @@ evidence:
     - .ai-company/repo-manifest.yaml
     - .ai-company/status-snapshot.yaml
   evidenceRefs:
-    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/16
-    - github://gshan1209-cell/cwa_scraper/issues/3
+    - github://gshan1209-cell/scrape_weather/issues/4
+    - github://gshan1209-cell/scrape_weather/issues/5
+    - github://gshan1209-cell/cwa_scraper/commit/7656e4aaa9a05c3b1492a28fd1a78b167e56122b
+    - github://gshan1209-cell/AI-Workstream/issues/242
+    - github://gshan1209-cell/AI-Workstream/issues/243
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/9fd78ea2718ee2e745554c65c0ccb98d98ee46f5
   verificationRefs: []
 
 limitations:
-  - Backend tests, Frontend lint／build and Browser behavior were not executed.
+  - Backend tests, Frontend lint/build and Browser behavior were not executed for current Main.
   - No Live CWA or Windy request was executed and no API key was accessed.
   - Frontend and backend deployment health were not rechecked.
-  - cwa_scraper Test-only validation remains pending.
+  - cwa_scraper #242/#243 validation remains pending; production adoption is blocked.
+  - TLS bypass policy remains unresolved under Security Issue #4.
+  - No Release, Deployment, Lifecycle or Conformance promotion is authorized.
