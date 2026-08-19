@@ -49,8 +49,13 @@ interfaces:
 weatherDataBoundary:
   canonicalOfficialSource: Taiwan-CWA-OpenData
   sharedAdapterCandidate: gshan1209-cell/cwa_scraper
-  sharedAdapterStatus: implementation-complete-verification-pending
+  sharedAdapterMainSha: 7656e4aaa9a05c3b1492a28fd1a78b167e56122b
+  sharedAdapterTlsLiveValidationTask: AI-Workstream#242
+  sharedAdapterGovernanceValidationTask: AI-Workstream#243
+  sharedAdapterValidationStatus: pending
+  sharedAdapterProductionAdoption: blocked
   mockDataMayBeRepresentedAsLive: false
+  mockMayBeRepresentedAsLiveOfficialData: false
   silentFallback: forbidden
 
 mapProviderBoundary:
@@ -59,6 +64,22 @@ mapProviderBoundary:
   fallbackMustBeVisible: true
   publicWindyKeyRequiresDomainRestriction: true
   publicWindyKeyRequiresQuotaRestriction: true
+
+executionPolicy:
+  companyOwner: gshan1209-cell/AI-Workstream
+  canonicalPolicy: DS-003@2.1.1
+  responsibility: RESP-DEV-AGENT-001@2.1.1
+  validationTaskProcedure: PROC-VALIDATION-TASK-001@2.1.1
+  codexProcedure: PROC-CODEX-POST-MAIN-VALIDATION-001@1.1.1
+  chatgptAuditProcedure: PROC-CHATGPT-AUDIT-001@2.1.1
+  issueClosureProcedure: PROC-ISSUE-CLOSURE-001@2.1.1
+  focusedImplementationMayMergeBeforeSupplementalValidation: true
+  postMainSupplementalValidation: true
+  testPullRequest: null
+  validatorRepositoryWrite: false
+  validatorRemediation: false
+  pendingValidationFreezesMain: false
+  skippedValidationMayBePassed: false
 
 minimumEvidenceContract:
   humanOverview: README.md
@@ -104,18 +125,23 @@ security:
   windyPublicKeyRequiresDomainAndQuotaRestriction: true
   productionTlsVerificationRequired: true
   tlsFailureMayBecomeTrustedData: false
+  tlsPolicyDecisionGate: gshan1209-cell/scrape_weather#4
   automaticCrossRepositoryWrites: disabled
   automaticMerge: disabled
   automaticRelease: disabled
   automaticDeployment: disabled
 
 evidence:
-  observedSourceSha: 61e21fd9ea442e48539610ff56908ad897834554
+  observedSourceSha: 34f5c9166d62802ad8809a875b91f78c29e4eca7
   observedBranch: main
-  reviewedAt: "2026-07-29T19:48:00+08:00"
+  reviewedAt: "2026-08-19T17:00:00+08:00"
   reviewer: ChatGPT-primary-development-agent
   verificationStatus: not-run
   evidenceRefs:
-    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/c7fe190295757626526b918cd2c0fbf329103c50
-    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/16
-    - github://gshan1209-cell/cwa_scraper/commit/84884e915d24b93aff185b9a5ff37d030e44470d
+    - github://gshan1209-cell/scrape_weather/issues/4
+    - github://gshan1209-cell/scrape_weather/issues/5
+    - github://gshan1209-cell/cwa_scraper/commit/7656e4aaa9a05c3b1492a28fd1a78b167e56122b
+    - github://gshan1209-cell/AI-Workstream/issues/242
+    - github://gshan1209-cell/AI-Workstream/issues/243
+    - github://gshan1209-cell/AI-Workstream/commit/696c0dcbaaf5a5ac40e80de9df2b0d428fcc3d7d
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/9fd78ea2718ee2e745554c65c0ccb98d98ee46f5
