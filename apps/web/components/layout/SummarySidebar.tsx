@@ -6,6 +6,7 @@ import type { WeeklyAdvisoryResponse } from "@/features/advisory/types";
 import type { HealthResponse } from "@/features/system/types";
 import type { DailyWeather } from "@/features/weather/types";
 import { cn } from "@/lib/utils";
+import { formatSourceTime, type DataState } from "@/lib/weather-state";
 
 type Props = {
   city: string;
@@ -15,7 +16,7 @@ type Props = {
   days?: DailyWeather[];
   advisory?: WeeklyAdvisoryResponse;
   loading: boolean;
-  updatedAt?: string;
+  updatedAt?: string | null;
   source?: string;
   health?: HealthResponse;
   healthLoading: boolean;
@@ -24,6 +25,8 @@ type Props = {
   weatherError?: Error;
   advisoryError?: Error;
   themeColor?: string;
+  weatherState: DataState;
+  adviceState: DataState;
 };
 
 export function SummarySidebar({
@@ -43,10 +46,14 @@ export function SummarySidebar({
   weatherError,
   advisoryError,
   themeColor = "#2f7d57",
+  weatherState,
+  adviceState,
 }: Props) {
-  const riskLevel = advisory?.riskLevel ?? "info";
+  const officialAdvice = adviceState.kind === "ready" && advisory;
+  const riskLevel = officialAdvice ? advisory.riskLevel : "info";
   const apiOnline = health?.status === "ok" && !healthError;
-  const suggestions = advisory?.suggestions ?? [];
+  const suggestions = adviceState.showData ? advisory?.suggestions ?? [] : [];
+  const visibleDays = weatherState.showData ? days : [];
 
   return (
     <div className="rounded-xl border border-stone-200/80 bg-white shadow-card overflow-hidden">
@@ -55,19 +62,20 @@ export function SummarySidebar({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-medium text-white/70">今日摘要</p>
-            <h2 className="mt-1 text-lg font-bold">{loading ? "資料載入中" : riskTitle(riskLevel)}</h2>
+            <h2 className="mt-1 text-lg font-bold">{officialAdvice ? riskTitle(riskLevel) : adviceState.title}</h2>
           </div>
-          <Badge tone={riskLevel}>{riskLabel(riskLevel)}</Badge>
+          <Badge tone={officialAdvice ? riskLevel : adviceState.tone}>{officialAdvice ? riskLabel(riskLevel) : adviceState.title}</Badge>
         </div>
-        {advisory?.summary && (
+        {adviceState.showData && advisory?.summary && (
           <p className="mt-3 text-sm leading-relaxed text-white/80">{advisory.summary}</p>
         )}
+        {!adviceState.showData && <p className="mt-3 text-sm leading-relaxed text-white/80">{adviceState.message}</p>}
 
         {/* Quick location/crop/temp */}
         <div className="mt-4 flex flex-wrap gap-1.5">
           <Chip>{city}{district ? ` · ${district}` : ""}</Chip>
           <Chip>{crop}</Chip>
-          {day && <Chip>{day.minTemp ?? "--"}° / {day.maxTemp ?? "--"}°</Chip>}
+          {weatherState.showData && day && <Chip>{day.minTemp ?? "--"}° / {day.maxTemp ?? "--"}°</Chip>}
         </div>
       </div>
 
@@ -102,14 +110,14 @@ export function SummarySidebar({
           <CalendarDays className="h-4 w-4 text-field" />
           <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">一週預報</p>
         </div>
-        {days.length > 0 ? (
+        {visibleDays.length > 0 ? (
           <div className="divide-y divide-stone-100">
-            {days.map((d) => (
+            {visibleDays.map((d) => (
               <DayRow key={d.date} day={d} />
             ))}
           </div>
         ) : (
-          <p className="text-xs text-stone-400 italic">{loading ? "載入中..." : "尚無預報資料"}</p>
+          <p className="text-xs text-stone-500">{weatherState.title}：{weatherState.message}</p>
         )}
       </div>
 
@@ -119,21 +127,21 @@ export function SummarySidebar({
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 text-stone-400">
               {apiOnline ? <CheckCircle2 className="h-3 w-3 text-field" /> : <WifiOff className="h-3 w-3 text-red-400" />}
-              {healthLoading ? "檢查中" : apiOnline ? `API 在線 v${health?.version}` : "API 離線"}
+              {weatherState.kind === "config" ? "服務尚未配置" : healthLoading ? "檢查中" : apiOnline ? `API 在線 v${health?.version}` : "API 離線"}
             </span>
             <span className="text-stone-400">
-              {sourceLabel(source)} · {formatDateTime(updatedAt)}
+              {sourceLabel(source)} · {formatSourceTime(updatedAt)}
             </span>
           </div>
           <div className="flex items-center gap-2 text-[11px] text-stone-400">
             <span>地圖 {mapMode}</span>
             <span>·</span>
             <span className={cn(weatherError && "text-red-400")}>
-              預報 {weatherError ? "失敗" : day ? "已同步" : "等待中"}
+              預報 {weatherState.title}
             </span>
             <span>·</span>
             <span className={cn(advisoryError && "text-red-400")}>
-              提醒 {advisoryError ? "失敗" : advisory ? "已產生" : "等待中"}
+              提醒 {adviceState.title}
             </span>
           </div>
         </div>
@@ -206,16 +214,4 @@ function sourceLabel(source?: string) {
   if (source === "Mock Weather Data" || source === "模擬天氣資料") return "模擬";
   if (source === "CWA OpenData") return "CWA";
   return source;
-}
-
-function formatDateTime(value?: string) {
-  if (!value) return "--";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("zh-TW", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
 }

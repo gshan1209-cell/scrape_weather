@@ -3,25 +3,26 @@ import { Badge } from "@/components/ui/badge";
 import { DailyWeather } from "@/features/weather/types";
 import { RainRiskBadge } from "./RainRiskBadge";
 import { TemperatureRange } from "./TemperatureRange";
+import type { DataState } from "@/lib/weather-state";
 
-export function CurrentWeatherCard({ day, loading, source }: { day?: DailyWeather; loading: boolean; source?: string }) {
+export function CurrentWeatherCard({ day, state, source }: { day?: DailyWeather; loading: boolean; source?: string; state: DataState }) {
   return (
     <Card className="bg-card-gradient">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">今日天氣</p>
-        {day && (
+        {state.showData && day && (
           <Badge tone={day.rainProbability != null && day.rainProbability >= 60 ? "warning" : "info"}>
             UV {day.uvIndex ?? "--"}
           </Badge>
         )}
       </div>
 
-      {loading ? (
+      {state.kind === "loading" ? (
         <div className="mt-6 flex items-center gap-2 text-sm text-stone-400">
           <span className="h-2 w-2 animate-pulse-soft rounded-full bg-field" />
           正在載入預報...
         </div>
-      ) : day ? (
+      ) : state.showData && day ? (
         <>
           <div className="mt-3 text-2xl font-bold text-stone-900 leading-tight">{day.weather}</div>
 
@@ -47,7 +48,7 @@ export function CurrentWeatherCard({ day, loading, source }: { day?: DailyWeathe
           </div>
         </>
       ) : (
-        <div className="mt-6 text-sm text-stone-400">尚無預報資料。</div>
+        <div className="mt-6 text-sm text-stone-500">{state.title}：{state.message}</div>
       )}
     </Card>
   );

@@ -2,8 +2,9 @@ import { CloudSun, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { WeeklyAdvisoryResponse } from "@/features/advisory/types";
+import type { DataState } from "@/lib/weather-state";
 
-export function FarmerAdviceCard({ advisory, loading }: { advisory?: WeeklyAdvisoryResponse; loading: boolean }) {
+export function FarmerAdviceCard({ advisory, state }: { advisory?: WeeklyAdvisoryResponse; loading: boolean; state: DataState }) {
   return (
     <Card>
       <div className="flex items-center justify-between gap-3">
@@ -13,15 +14,15 @@ export function FarmerAdviceCard({ advisory, loading }: { advisory?: WeeklyAdvis
           </div>
           <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">農事提醒</p>
         </div>
-        {advisory && <Badge tone={advisory.riskLevel}>{riskLabel(advisory.riskLevel)}</Badge>}
+        <Badge tone={state.kind === "ready" ? advisory?.riskLevel : state.tone}>{state.kind === "ready" && advisory ? riskLabel(advisory.riskLevel) : state.title}</Badge>
       </div>
 
-      {loading ? (
+      {state.kind === "loading" ? (
         <div className="mt-5 flex items-center gap-2 text-sm text-stone-400">
           <span className="h-2 w-2 animate-pulse-soft rounded-full bg-field" />
           正在產生建議...
         </div>
-      ) : advisory ? (
+      ) : state.showData && advisory ? (
         <>
           <p className="mt-4 text-lg font-bold leading-relaxed text-stone-900">{advisory.summary}</p>
           <div className="mt-4 flex items-center gap-1.5 text-xs text-stone-400">
@@ -30,7 +31,7 @@ export function FarmerAdviceCard({ advisory, loading }: { advisory?: WeeklyAdvis
           </div>
         </>
       ) : (
-        <div className="mt-5 text-sm text-stone-400">尚無農事提醒。</div>
+        <div className="mt-5 text-sm text-stone-500">{state.title}：{state.message}</div>
       )}
     </Card>
   );

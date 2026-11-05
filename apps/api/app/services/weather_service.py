@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
+import httpx
 
 from app.core.config import settings
 from app.schemas.weather import DailyWeather, StationsResponse, WeatherStation, WeeklyWeatherResponse
@@ -17,15 +18,43 @@ class WeatherService:
         try:
             raw = await self.cwa_client.fetch_weekly_forecast(settings.CWA_WEEKLY_DATASET_ID, city)
             return self._normalize_cwa(raw, city=city, district=district)
-        except Exception:
-            return self._mock_weather(city=city, district=district)
+        except Exception as exc:
+            return self._mock_weather(city=city, district=district, reason=self._failure_reason(exc))
 
     async def get_stations(self) -> StationsResponse:
         try:
             raw = await self.cwa_client.fetch_stations()
             return self._normalize_stations(raw)
-        except Exception:
-            return StationsResponse(updatedAt=datetime.now(TAIPEI_TZ).isoformat(), stations=[])
+        except Exception as exc:
+            reason = self._failure_reason(exc)
+            return StationsResponse(
+                stations=[], dataStatus="unavailable" if reason == "not_configured" else "error", reason=reason,
+            )
+
+    def _failure_reason(self, exc: Exception) -> str:
+        if isinstance(exc, ValueError) and not settings.CWA_API_KEY:
+            return "not_configured"
+        if isinstance(exc, httpx.TimeoutException):
+            return "upstream_timeout"
+        if isinstance(exc, httpx.ConnectError) and "CERTIFICATE_VERIFY_FAILED" in str(exc):
+            return "upstream_tls_error"
+        return "upstream_error"
+
+    def _parse_time(self, value: str | None) -> datetime | None:
+        if not value:
+            return None
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return parsed if parsed.tzinfo else parsed.replace(tzinfo=TAIPEI_TZ)
+        except (ValueError, TypeError):
+            return None
+
+    def _time_status(self, value: str | None) -> str:
+        observed = self._parse_time(value)
+        now = datetime.now(TAIPEI_TZ)
+        if observed is None or observed > now + timedelta(minutes=5):
+            return "unknown"
+        return "stale" if now - observed > timedelta(minutes=settings.CACHE_TTL_MINUTES) else "live"
 
     def _normalize_stations(self, raw: dict[str, Any]) -> StationsResponse:
         records = raw.get("records", {})
@@ -65,10 +94,12 @@ class WeatherService:
                 weather=weather_elements.get("Weather"),
             ))
 
-        return StationsResponse(
-            updatedAt=datetime.now(TAIPEI_TZ).isoformat(),
-            stations=stations,
-        )
+        times = [(self._parse_time(station.obsTime), station.obsTime) for station in stations]
+        valid_times = [(parsed, value) for parsed, value in times if parsed is not None]
+        updated_at = max(valid_times, key=lambda item: item[0])[1] if valid_times else None
+        status = self._time_status(updated_at) if stations else "empty"
+        reason = {"empty": "empty_dataset", "unknown": "timestamp_unknown", "stale": "data_expired"}.get(status)
+        return StationsResponse(updatedAt=updated_at, stations=stations, dataStatus=status, reason=reason)
 
     def _to_float(self, value: Any) -> float | None:
         if value is None:
@@ -88,17 +119,29 @@ class WeatherService:
             location_items = records.get("location", []) or records.get("Location", [])
 
         target = self._pick_location(location_items, city)
+        if target is None:
+            return WeeklyWeatherResponse(
+                city=city, district=district, days=[], dataStatus="empty",
+                reason="location_not_found" if location_items else "empty_dataset",
+            )
         weather_elements = (target.get("weatherElement", []) or target.get("WeatherElement", [])) if target else []
         days = self._days_from_elements(weather_elements)
         if not days:
-            return self._mock_weather(city=city, district=district)
+            return WeeklyWeatherResponse(city=city, district=district, days=[], dataStatus="empty", reason="empty_dataset")
 
-        updated_at = raw.get("sent") or datetime.now(TAIPEI_TZ).isoformat()
+        updated_at = raw.get("sent") if self._parse_time(raw.get("sent")) is not None else None
+        status = self._time_status(updated_at)
+        today = datetime.now(TAIPEI_TZ).date().isoformat()
+        days = [day for day in days if day.date >= today]
+        if not days:
+            status = "stale"
         return WeeklyWeatherResponse(
             city=city,
             district=district,
             updatedAt=updated_at,
             source="CWA OpenData",
+            dataStatus=status,
+            reason={"unknown": "timestamp_unknown", "stale": "data_expired"}.get(status),
             days=days[:7],
         )
 
@@ -106,7 +149,7 @@ class WeatherService:
         for location in locations:
             if (location.get("locationName") or location.get("LocationName")) == name:
                 return location
-        return locations[0] if locations else None
+        return None
 
     def _days_from_elements(self, elements: list[dict[str, Any]]) -> list[DailyWeather]:
         by_date: dict[str, dict[str, Any]] = {}
@@ -181,7 +224,7 @@ class WeatherService:
         digits = "".join(ch for ch in str(value) if ch.isdigit())
         return int(digits) if digits else None
 
-    def _mock_weather(self, city: str, district: str | None) -> WeeklyWeatherResponse:
+    def _mock_weather(self, city: str, district: str | None, reason: str = "mock_fallback") -> WeeklyWeatherResponse:
         today = datetime.now(TAIPEI_TZ)
         patterns = [
             ("高溫炎熱，午後有雷陣雨", 26, 36, 70, 8),
@@ -213,5 +256,7 @@ class WeatherService:
             district=district,
             updatedAt=today.isoformat(),
             source="模擬天氣資料",
+            dataStatus="mock",
+            reason=reason,
             days=days,
         )

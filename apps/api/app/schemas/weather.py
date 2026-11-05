@@ -1,4 +1,7 @@
 from pydantic import BaseModel
+from typing import Literal
+
+DataStatus = Literal["live", "mock", "stale", "empty", "error", "unavailable", "unknown"]
 
 
 class DailyWeather(BaseModel):
@@ -16,8 +19,10 @@ class DailyWeather(BaseModel):
 class WeeklyWeatherResponse(BaseModel):
     city: str
     district: str | None = None
-    updatedAt: str
+    updatedAt: str | None = None
     source: str = "CWA OpenData"
+    dataStatus: DataStatus = "unknown"
+    reason: str | None = None
     days: list[DailyWeather]
 
 
@@ -40,5 +45,8 @@ class WeatherStation(BaseModel):
 
 
 class StationsResponse(BaseModel):
-    updatedAt: str
+    updatedAt: str | None = None
+    source: str = "CWA OpenData"
+    dataStatus: DataStatus = "unknown"
+    reason: str | None = None
     stations: list[WeatherStation]

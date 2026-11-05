@@ -1,3 +1,5 @@
+import type { DataStatus } from "@/features/weather/types";
+
 export type AdvisoryAlert = {
   level: "info" | "warning" | "danger" | string;
   type: string;
@@ -9,6 +11,9 @@ export type WeeklyAdvisoryResponse = {
   city: string;
   district?: string | null;
   crop?: string | null;
+  source?: string | null;
+  dataStatus?: DataStatus;
+  reason?: string | null;
   summary: string;
   riskLevel: "normal" | "warning" | "danger" | string;
   alerts: AdvisoryAlert[];

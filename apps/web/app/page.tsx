@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CloudRain, CloudSun, MapPin, RefreshCw, ThermometerSun, Wind } from "lucide-react";
 import { AlertBanner } from "@/components/farmer/AlertBanner";
 import { CropSelector } from "@/components/farmer/CropSelector";
@@ -16,6 +16,7 @@ import { useSystemHealth } from "@/features/system/hooks";
 import { getWeatherMapConfig } from "@/features/weather-map/config";
 import { useStations, useWeeklyWeather } from "@/features/weather/hooks";
 import { tempToColor, tempToGradient } from "@/lib/utils";
+import { currentForecastDays, currentStations, currentWeatherDay, formatSourceTime, getAdviceState, getStationState, getWeatherState } from "@/lib/weather-state";
 
 const FALLBACK_CITY = "臺北市";
 const FALLBACK_DISTRICT = "北投區";
@@ -29,6 +30,15 @@ export default function HomePage() {
   const locations = useLocations();
   const health = useSystemHealth();
   const stations = useStations();
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const weatherState = getWeatherState({...weather, city, district, now});
+  const adviceState = getAdviceState({weather: weatherState, ...advisory});
+  const stationState = getStationState({...stations, now});
+  const mapStations = useMemo(() => stations.data && ({...stations.data, stations: stationState.showData ? currentStations(stations.data.stations, now) : []}), [stations.data, stationState.showData, now]);
 
   const mapConfig = useMemo(() => getWeatherMapConfig(), []);
   const mapMode = mapConfig.provider === "windy" && mapConfig.windyApiKey ? "Windy" : "Leaflet 模擬";
@@ -105,8 +115,8 @@ export default function HomePage() {
     stations.reload();
   }
 
-  const firstDay = weather.data?.days[0];
-  const allDays = weather.data?.days ?? [];
+  const allDays = weatherState.showData ? currentForecastDays(weather.data?.days ?? [], now) : [];
+  const firstDay = currentWeatherDay(allDays, now);
   const isLoading = weather.loading || advisory.loading;
 
   const themeColor = useMemo(() => {
@@ -142,6 +152,8 @@ export default function HomePage() {
               weatherError={weather.error}
               advisoryError={advisory.error}
               themeColor={themeColor}
+              weatherState={weatherState}
+              adviceState={adviceState}
             />
           </div>
         </aside>
@@ -244,28 +256,30 @@ export default function HomePage() {
               weatherError={weather.error}
               advisoryError={advisory.error}
               themeColor={themeColor}
+              weatherState={weatherState}
+              adviceState={adviceState}
             />
           </section>
 
           {/* Error banner */}
-          {(weather.error || advisory.error || locations.error) && (
-            <AlertBanner level="warning" title="API 連線異常" message="部分資料暫時無法同步，系統會保留目前可用內容。" />
-          )}
+          {weatherState.kind !== "ready" && weatherState.kind !== "loading" && <AlertBanner level="warning" title={weatherState.title} message={weatherState.message} />}
+          {adviceState.kind === "error" && weatherState.showData && <AlertBanner level="warning" title="農事提醒載入失敗" message={adviceState.message} />}
+          {stationState.kind !== "ready" && stationState.kind !== "loading" && <AlertBanner level="warning" title={`測站：${stationState.title}`} message={`${stationState.message} 來源時間：${formatSourceTime(stations.data?.updatedAt)}`} />}
 
           {/* Map */}
           <section className="animate-fade-in rounded-xl shadow-map overflow-hidden">
-            <WeatherMapShell city={city} district={district} crop={crop} advisory={advisory.data} stations={stations.data} onLocationSelect={handleLocationSelect} />
+            <WeatherMapShell city={city} district={district} crop={crop} advisory={adviceState.showData ? advisory.data : undefined} adviceState={adviceState} stations={mapStations} stationState={stationState} onLocationSelect={handleLocationSelect} />
           </section>
 
           {/* Alert banners */}
-          {advisory.data?.alerts.map((alert) => (
+          {adviceState.kind === "ready" && advisory.data?.alerts.map((alert) => (
             <AlertBanner key={`${alert.type}-${alert.title}`} level={alert.level} title={alert.title} message={alert.message} />
           ))}
 
           {/* Today + Advice */}
           <section className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
-            <CurrentWeatherCard day={firstDay} loading={weather.loading} source={weather.data?.source} />
-            <FarmerAdviceCard advisory={advisory.data} loading={advisory.loading} />
+            <CurrentWeatherCard day={firstDay} loading={weather.loading} source={weather.data?.source} state={weatherState} />
+            <FarmerAdviceCard advisory={advisory.data} loading={advisory.loading} state={adviceState} />
           </section>
         </div>
       </div>

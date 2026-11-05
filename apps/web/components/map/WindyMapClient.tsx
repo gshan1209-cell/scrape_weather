@@ -6,6 +6,8 @@ import { WeeklyAdvisoryResponse } from "@/features/advisory/types";
 import type { WeatherMapConfig, WeatherOverlay } from "@/features/weather-map/types";
 import { MapFloatingAdvice } from "./MapFloatingAdvice";
 import { MapProviderFallback } from "./MapProviderFallback";
+import type { DataState } from "@/lib/weather-state";
+import type { StationsResponse } from "@/features/weather/types";
 
 type WindyStore = {
   set: (key: string, value: unknown, opts?: Record<string, unknown>) => void;
@@ -26,6 +28,9 @@ type Props = {
   district?: string;
   crop?: string;
   advisory?: WeeklyAdvisoryResponse;
+  adviceState: DataState;
+  stations?: StationsResponse;
+  stationState: DataState;
   onLocationSelect?: (city: string, district?: string) => void;
 };
 
@@ -33,7 +38,7 @@ type WindyStatus = "載入 Leaflet script" | "載入 Windy script" | "初始化 
 
 const WINDY_INIT_TIMEOUT_MS = 8000;
 
-export function WindyMapClient({ config, city, district, crop, advisory, onLocationSelect }: Props) {
+export function WindyMapClient({ config, city, district, crop, advisory, adviceState, stations, stationState, onLocationSelect }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const initializedRef = useRef(false);
   const completedRef = useRef(false);
@@ -97,7 +102,7 @@ export function WindyMapClient({ config, city, district, crop, advisory, onLocat
   }, [leafletLoaded, windyLoaded, failed, config]);
 
   if (failed) {
-    return <MapProviderFallback reason="Windy 地圖載入失敗，已自動改用 Leaflet 模擬地圖。" config={config} city={city} district={district} crop={crop} advisory={advisory} onLocationSelect={onLocationSelect} />;
+    return <MapProviderFallback reason="Windy 地圖載入失敗，已自動改用 Leaflet 模擬地圖。" config={config} city={city} district={district} crop={crop} advisory={advisory} adviceState={adviceState} stations={stations} stationState={stationState} onLocationSelect={onLocationSelect} />;
   }
 
   return (
@@ -132,7 +137,7 @@ export function WindyMapClient({ config, city, district, crop, advisory, onLocat
         <p className="text-xs font-medium text-stone-500">{status}</p>
         <h2 className="text-lg font-semibold">Windy map</h2>
       </div>
-      <MapFloatingAdvice advisory={advisory} crop={crop} />
+      <MapFloatingAdvice advisory={advisory} crop={crop} state={adviceState} />
     </section>
   );
 }

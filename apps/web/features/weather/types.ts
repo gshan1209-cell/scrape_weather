@@ -1,3 +1,5 @@
+export type DataStatus = "live" | "mock" | "stale" | "empty" | "error" | "unavailable" | "unknown";
+
 export type DailyWeather = {
   date: string;
   weather: string;
@@ -13,8 +15,10 @@ export type DailyWeather = {
 export type WeeklyWeatherResponse = {
   city: string;
   district?: string | null;
-  updatedAt: string;
+  updatedAt: string | null;
   source: string;
+  dataStatus?: DataStatus;
+  reason?: string | null;
   days: DailyWeather[];
 };
 
@@ -37,6 +41,9 @@ export type WeatherStation = {
 };
 
 export type StationsResponse = {
-  updatedAt: string;
+  updatedAt: string | null;
+  source?: string;
+  dataStatus?: DataStatus;
+  reason?: string | null;
   stations: WeatherStation[];
 };
