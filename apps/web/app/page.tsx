@@ -43,6 +43,15 @@ export default function HomePage() {
   const mapConfig = useMemo(() => getWeatherMapConfig(), []);
   const mapMode = mapConfig.provider === "windy" && mapConfig.windyApiKey ? "Windy" : "Leaflet 模擬";
 
+  const districtsForCity = useCallback((selectedCity: string) => {
+    const observedTowns = Array.from(new Set(stations.data?.stations
+      .filter(station => station.countyName === selectedCity && station.townName)
+      .map(station => station.townName) ?? [])).sort();
+    if (observedTowns.length) return observedTowns;
+    const configuredTowns = locations.data?.locations.find(location => location.city === selectedCity)?.districts;
+    return configuredTowns?.length ? configuredTowns : selectedCity === FALLBACK_CITY ? [FALLBACK_DISTRICT] : [];
+  }, [stations.data, locations.data]);
+
   // Build county/town lists from station data
   const { countyList, townList } = useMemo(() => {
     if (!stations.data?.stations.length) {
@@ -51,7 +60,7 @@ export default function HomePage() {
         countyList: locCounties.length > 0
           ? locCounties.map((l) => ({ name: l.city, count: 0 }))
           : [{ name: FALLBACK_CITY, count: 0 }],
-        townList: ["北投區"],
+        townList: districtsForCity(city),
       };
     }
 
@@ -70,41 +79,29 @@ export default function HomePage() {
       .map(([name, towns]) => ({ name, count: towns.size }))
       .sort((a, b) => b.count - a.count);
 
-    const towns = Array.from(countyMap.get(city) ?? countyMap.values().next().value ?? new Set<string>());
-    const sortedTowns = [...towns].sort();
-
     return {
       countyList: sorted,
-      townList: sortedTowns.length > 0 ? sortedTowns : [FALLBACK_DISTRICT],
+      townList: districtsForCity(city),
     };
-  }, [stations.data, city, locations.data]);
+  }, [stations.data, city, locations.data, districtsForCity]);
 
   function handleCity(value: string) {
     setCity(value);
-    const towns = stations.data?.stations
-      .filter((s) => s.countyName === value && s.townName)
-      .map((s) => s.townName!)
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .sort() ?? [];
-    setDistrict(towns[0] ?? FALLBACK_DISTRICT);
+    setDistrict(districtsForCity(value)[0] ?? "");
   }
 
   const handleLocationSelect = useCallback(
     (selectedCity: string, selectedDistrict?: string) => {
       setCity(selectedCity);
-      const towns = stations.data?.stations
-        .filter((s) => s.countyName === selectedCity && s.townName)
-        .map((s) => s.townName!)
-        .filter((v, i, a) => a.indexOf(v) === i)
-        .sort() ?? [];
+      const towns = districtsForCity(selectedCity);
 
       if (selectedDistrict && towns.includes(selectedDistrict)) {
         setDistrict(selectedDistrict);
       } else {
-        setDistrict(towns[0] ?? selectedDistrict ?? FALLBACK_DISTRICT);
+        setDistrict(towns[0] ?? "");
       }
     },
-    [stations.data],
+    [districtsForCity],
   );
 
   function refreshAll() {

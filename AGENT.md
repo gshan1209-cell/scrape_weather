@@ -15,7 +15,7 @@
 
 - 不要輸出、提交或記錄 `.env` 裡的 `CWA_API_KEY`。
 - `.env` 已被 `.gitignore` 排除。
-- `CWA_VERIFY_SSL=false` 只適合本機開發 workaround；正式環境請維持 `true`，並處理系統 CA/憑證信任問題。
+- CWA TLS 憑證驗證在開發與正式環境都必須啟用。`CWA_VERIFY_SSL=false` 會被設定驗證拒絕；憑證鏈失敗請修正 trust store、Proxy 或受信任 CA，不得繞過驗證。
 - Windy key 若未來啟用，`NEXT_PUBLIC_WINDY_API_KEY` 是前端可見金鑰，正式環境需做 domain restriction 和 usage limit。
 
 ## 目前已知狀態
@@ -25,10 +25,8 @@
 - 後端可讀到 `.env` 中的 `CWA_API_KEY`。
 - 本機測試 CWA 連線時曾遇到 Python SSL 錯誤：
   - `CERTIFICATE_VERIFY_FAILED: Missing Subject Key Identifier`
-- 因此新增了 `CWA_VERIFY_SSL` 設定：
-  - 預設 `true`
-  - 若本機測試需要可在 `.env` 加 `CWA_VERIFY_SSL=false`
-- 使用者已在 `.env` 加上 `CWA_VERIFY_SSL=false` 後，CWA live request 已成功回 `200`。
+- 歷史版本曾提供停用 TLS 的開發路徑，已由 PR #8（Main `275dd89f7ae36e6e4a2cf869da1fb84b635dce9d`）移除。設定只能接受 `true`，兩個 CWA client 皆明確使用 `verify=True`。
+- 舊版連線結果僅是歷史紀錄，不能視為目前授權 CWA Live 整合或獨立安全驗證通過。AI-Workstream #247、相依 #242/#243 與正式上線閘門仍待驗收。
 - `apps/api/app/services/weather_service.py` 已修正 parser，可支援 CWA `F-D0047-091` 的實際大寫 JSON 結構：
   - `records.Locations[].Location[].WeatherElement[]`
   - `ElementName`
@@ -151,7 +149,7 @@ Base path: `/api/v1`
 
 3. **改善 SSL 處理**
    - 優先找出本機 Python/CA 為何不信任 CWA 憑證。
-   - 避免長期依賴 `CWA_VERIFY_SSL=false`。
+   - 保持 `verify=True`，不得新增停用 TLS 的替代路徑。
 
 4. **前端錯誤狀態更細**
    - 區分 API 離線、CWA fallback、資料解析失敗。

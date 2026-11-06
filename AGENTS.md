@@ -56,7 +56,7 @@
 - 不得自動修改 CORS、Credential、Provider、Dataset、Production Deployment 或公開 URL。
 - 不得以 Mock 成功取代 Live Integration Evidence。
 - 不得自動 Merge、Release 或 Deployment。
-- `CWA_VERIFY_SSL=false` 的現存開發模式由 Security Issue #4 獨立管理；本治理收斂不得順帶修改 TLS Policy。
+- PR #8 已移除停用 TLS 的開發路徑；`CWA_VERIFY_SSL=false` 必須 Fail Closed。Security Issue #4 的獨立驗證沿 AI-Workstream #247，尚未完成，不得宣告 Production 通過或順帶修改 TLS Policy。
 
 ## 6. Development / Validation Boundary
 
