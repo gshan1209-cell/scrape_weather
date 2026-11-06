@@ -4,12 +4,14 @@ import { DailyWeather } from "@/features/weather/types";
 import { RainRiskBadge } from "./RainRiskBadge";
 import { TemperatureRange } from "./TemperatureRange";
 import type { DataState } from "@/lib/weather-state";
+import { isDemoMode } from "@/lib/weather-api";
 
 export function CurrentWeatherCard({ day, state, source }: { day?: DailyWeather; loading: boolean; source?: string; state: DataState }) {
+  const demoMode = isDemoMode() || state.kind === "demo";
   return (
     <Card className="bg-card-gradient">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">今日天氣</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">{demoMode ? "示範天氣（非即時）" : "今日天氣"}</p>
         {state.showData && day && (
           <Badge tone={day.rainProbability != null && day.rainProbability >= 60 ? "warning" : "info"}>
             UV {day.uvIndex ?? "--"}
@@ -20,11 +22,12 @@ export function CurrentWeatherCard({ day, state, source }: { day?: DailyWeather;
       {state.kind === "loading" ? (
         <div className="mt-6 flex items-center gap-2 text-sm text-stone-400">
           <span className="h-2 w-2 animate-pulse-soft rounded-full bg-field" />
-          正在載入預報...
+          {demoMode ? "正在載入示範資料..." : "正在載入預報..."}
         </div>
       ) : state.showData && day ? (
         <>
           <div className="mt-3 text-2xl font-bold text-stone-900 leading-tight">{day.weather}</div>
+          {state.kind === "demo" && <p className="mt-2 text-xs text-stone-500">固定樣本日期：{day.date}，非來源更新時間</p>}
 
           <div className="mt-4 flex flex-wrap items-center gap-2.5">
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-field-50 px-3 py-1.5 text-sm font-semibold text-field-dark">

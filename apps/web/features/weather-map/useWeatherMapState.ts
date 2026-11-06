@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import type { WeatherMapConfig, WeatherMapLocation, WeatherOverlay } from "./types";
+import { isDemoMode } from "@/lib/weather-api";
+import { DEMO_TIME_LABELS } from "@/lib/demo-data";
 
 const TIME_LABELS = ["現在", "+6 小時", "+12 小時", "+24 小時", "+2 天", "+3 天", "+4 天", "+5 天", "+6 天", "+7 天"];
 
@@ -28,7 +30,8 @@ export function useWeatherMapState(config: WeatherMapConfig, city: string, distr
     return { city, district, ...coords };
   }, [city, config.defaultLat, config.defaultLon, district]);
 
-  const currentTimeLabel = useMemo(() => TIME_LABELS[selectedTimeIndex] ?? "現在", [selectedTimeIndex]);
+  const timeLabels = isDemoMode() ? DEMO_TIME_LABELS : TIME_LABELS;
+  const currentTimeLabel = useMemo(() => timeLabels[selectedTimeIndex] ?? timeLabels[0], [selectedTimeIndex, timeLabels]);
 
   return {
     overlay,
@@ -38,7 +41,7 @@ export function useWeatherMapState(config: WeatherMapConfig, city: string, distr
     isPlaying,
     setIsPlaying,
     togglePlaying: () => setIsPlaying((value) => !value),
-    timeLabels: TIME_LABELS,
+    timeLabels,
     currentTimeLabel,
     location,
   };

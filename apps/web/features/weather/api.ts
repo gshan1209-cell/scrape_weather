@@ -1,12 +1,12 @@
-import { apiGet } from "@/lib/api-client";
+import { weatherGet } from "@/lib/weather-api";
 import { StationsResponse, WeeklyWeatherResponse } from "./types";
 
 export function fetchWeeklyWeather(city: string, district?: string) {
   const params = new URLSearchParams({ city });
   if (district) params.set("district", district);
-  return apiGet<WeeklyWeatherResponse>(`/weather/weekly?${params.toString()}`);
+  return weatherGet<WeeklyWeatherResponse>(`/weather/weekly?${params.toString()}`);
 }
 
 export function fetchStations() {
-  return apiGet<StationsResponse>("/weather/stations");
+  return weatherGet<StationsResponse>("/weather/stations");
 }

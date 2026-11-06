@@ -1,6 +1,6 @@
-import { apiGet } from "@/lib/api-client";
+import { weatherGet } from "@/lib/weather-api";
 import { LocationListResponse } from "./types";
 
 export function fetchLocations() {
-  return apiGet<LocationListResponse>("/locations");
+  return weatherGet<LocationListResponse>("/locations");
 }

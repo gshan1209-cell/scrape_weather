@@ -16,12 +16,14 @@ import { useSystemHealth } from "@/features/system/hooks";
 import { getWeatherMapConfig } from "@/features/weather-map/config";
 import { useStations, useWeeklyWeather } from "@/features/weather/hooks";
 import { tempToColor, tempToGradient } from "@/lib/utils";
+import { isDemoMode } from "@/lib/weather-api";
 import { currentForecastDays, currentStations, currentWeatherDay, formatSourceTime, getAdviceState, getStationState, getWeatherState } from "@/lib/weather-state";
 
 const FALLBACK_CITY = "臺北市";
 const FALLBACK_DISTRICT = "北投區";
 
 export default function HomePage() {
+  const demoMode = isDemoMode();
   const [city, setCity] = useState(FALLBACK_CITY);
   const [district, setDistrict] = useState(FALLBACK_DISTRICT);
   const [crop, setCrop] = useState("水稻");
@@ -112,8 +114,8 @@ export default function HomePage() {
     stations.reload();
   }
 
-  const allDays = weatherState.showData ? currentForecastDays(weather.data?.days ?? [], now) : [];
-  const firstDay = currentWeatherDay(allDays, now);
+  const allDays = weatherState.showData ? weatherState.kind === "demo" ? weather.data?.days ?? [] : currentForecastDays(weather.data?.days ?? [], now) : [];
+  const firstDay = weatherState.kind === "demo" ? allDays[0] : currentWeatherDay(allDays, now);
   const isLoading = weather.loading || advisory.loading;
 
   const themeColor = useMemo(() => {
@@ -163,14 +165,14 @@ export default function HomePage() {
               <div className="max-w-lg">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
                   <CloudSun className="h-3.5 w-3.5" />
-                  CWA 開放資料 · 農事天氣
+                  {demoMode ? "示範資料 · 非即時天氣" : "CWA 開放資料 · 農事天氣"}
                 </div>
                 <h1 className="mt-4 text-3xl font-bold tracking-tight md:text-4xl">
-                  一週天氣風險，<br />
-                  <span className="text-sun-light">田間工作一手掌握</span>
+                  {demoMode ? "農事天氣示範，" : "一週天氣風險，"}<br />
+                  <span className="text-sun-light">{demoMode ? "先體驗畫面操作" : "田間工作一手掌握"}</span>
                 </h1>
                 <p className="mt-3 text-sm leading-relaxed text-white/75">
-                  選擇地區與作物，即時取得溫度、降雨、風速預報與農事提醒建議。
+                  {demoMode ? "切換地區與作物，操作固定範例；不代表即時天氣或實際農事建議。" : "選擇地區與作物，即時取得溫度、降雨、風速預報與農事提醒建議。"}
                 </p>
 
                 {firstDay && (

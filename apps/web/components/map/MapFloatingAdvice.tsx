@@ -1,17 +1,19 @@
 import { Badge } from "@/components/ui/badge";
 import { WeeklyAdvisoryResponse } from "@/features/advisory/types";
 import type { DataState } from "@/lib/weather-state";
+import { isDemoMode } from "@/lib/weather-api";
 
 export function MapFloatingAdvice({ advisory, crop, state }: { advisory?: WeeklyAdvisoryResponse; crop?: string; state: DataState }) {
   const officialAdvice = state.kind === "ready" && advisory;
+  const demoMode = isDemoMode() || state.kind === "demo";
   return (
     <div className="absolute bottom-24 right-3 max-w-[220px] rounded-xl bg-white/95 p-3.5 text-stone-900 shadow-elevated backdrop-blur md:bottom-20">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-xs font-semibold">田間訊號</div>
+        <div className="text-xs font-semibold">{demoMode ? "示範訊號" : "田間訊號"}</div>
         <Badge tone={officialAdvice ? advisory.riskLevel : state.tone}>{officialAdvice ? riskLabel(advisory.riskLevel) : state.title}</Badge>
       </div>
       <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-stone-600">
-        {state.showData && advisory ? `${state.kind === "mock" ? "模擬提醒：" : ""}${advisory.summary}` : state.kind === "loading" ? `正在載入${crop || "作物"}的一週風險提醒。` : state.message}
+        {state.showData && advisory ? `${demoMode ? "示範提醒（非農事建議）：" : state.kind === "mock" ? "模擬提醒：" : ""}${advisory.summary}` : state.kind === "loading" ? demoMode ? "正在載入示範提醒。" : `正在載入${crop || "作物"}的一週風險提醒。` : state.message}
       </p>
     </div>
   );

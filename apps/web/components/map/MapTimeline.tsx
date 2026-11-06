@@ -1,6 +1,7 @@
 "use client";
 
 import { Pause, Play } from "lucide-react";
+import { isDemoMode } from "@/lib/weather-api";
 
 type Props = {
   labels: string[];
@@ -23,7 +24,7 @@ export function MapTimeline({ labels, value, isPlaying, onChange, onPlayToggle }
           {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </button>
         <input
-          aria-label="預報時間"
+          aria-label={isDemoMode() ? "示範影格" : "預報時間"}
           className="h-1.5 min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-white/20 accent-white [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md"
           type="range"
           min={0}
@@ -31,7 +32,7 @@ export function MapTimeline({ labels, value, isPlaying, onChange, onPlayToggle }
           value={value}
           onChange={(event) => onChange(Number(event.target.value))}
         />
-        <span className="w-16 text-right text-sm font-semibold text-white">{labels[value]}</span>
+        <span className="w-24 shrink-0 text-right text-sm font-semibold text-white">{labels[value]}</span>
       </div>
       <div className="mt-2 hidden grid-cols-10 text-[10px] text-white/50 sm:grid">
         {labels.map((label) => (

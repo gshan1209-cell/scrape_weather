@@ -9,6 +9,7 @@ const {FarmerAdviceCard} = require('../components/farmer/FarmerAdviceCard.tsx');
 const {CurrentWeatherCard} = require('../components/weather/CurrentWeatherCard.tsx');
 const {getWeatherState} = require('../lib/weather-state.ts');
 const {ApiClientError} = require('../lib/api-client.ts');
+const {demoGet} = require('../lib/demo-data.ts');
 const render = (Component,props) => renderToStaticMarkup(React.createElement(Component,props));
 const failed={kind:'error',title:'載入失敗',message:'資料無法取得，請稍後重試。',showData:false,isSynced:false,tone:'warning'};
 const stale={...failed,kind:'stale',title:'資料已過期',message:'預報已過期，暫不提供農事建議。'};
@@ -42,4 +43,20 @@ test('invalid API configuration explains missing production backend without show
   const html=render(SummarySidebar,{city:'台北市',crop:'水稻',loading:false,advisory,days:[],weatherState:config,adviceState:config,mapMode:'Leaflet 模擬',healthLoading:false});
   assert.match(html,/正式天氣後端/);
   assert.doesNotMatch(html,/Synthetic normal advice|已同步|API 在線/);
+});
+
+test('local demo cards label fixed sample weather and non-actionable reminders', () => {
+  const data=demoGet('/weather/weekly?city=臺北市&district=北投區');
+  const weatherState=getWeatherState({data,loading:false,city:'臺北市',district:'北投區'});
+  const advisory=demoGet('/advisory/weekly?city=臺北市&district=北投區&crop=水稻');
+  const html=render(CurrentWeatherCard,{day:data.days[0],state:weatherState,loading:false,source:data.source})+
+    render(FarmerAdviceCard,{advisory,state:weatherState,loading:false})+
+    render(SummarySidebar,{city:'臺北市',crop:'水稻',loading:false,advisory,day:data.days[0],days:data.days,weatherState,adviceState:weatherState,mapMode:'Leaflet 模擬',health:{status:'demo'},healthLoading:false});
+  assert.match(html,/非即時/);assert.match(html,/2024-01-01/);assert.match(html,/非實際農事建議/);assert.match(html,/未連線 API/);
+  assert.doesNotMatch(html,/API 在線|資料已同步|今日天氣|田間條件穩定|項作業建議/);
+});
+
+test('initial no-API loading cards keep demo identity instead of real-time wording',()=>{
+  const previous=process.env.NEXT_PUBLIC_API_BASE_URL;delete process.env.NEXT_PUBLIC_API_BASE_URL;
+  try{const state=getWeatherState({loading:true,city:'臺北市'});const html=render(CurrentWeatherCard,{state,loading:true})+render(FarmerAdviceCard,{state,loading:true});assert.match(html,/示範天氣/);assert.match(html,/示範提醒/);assert.doesNotMatch(html,/今日天氣|正在產生建議/);}finally{if(previous===undefined)delete process.env.NEXT_PUBLIC_API_BASE_URL;else process.env.NEXT_PUBLIC_API_BASE_URL=previous;}
 });

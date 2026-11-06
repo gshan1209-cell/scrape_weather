@@ -1,6 +1,6 @@
-import { apiGet } from "@/lib/api-client";
+import { weatherGet } from "@/lib/weather-api";
 import type { HealthResponse } from "./types";
 
 export function fetchHealth() {
-  return apiGet<HealthResponse>("/health");
+  return weatherGet<HealthResponse>("/health");
 }

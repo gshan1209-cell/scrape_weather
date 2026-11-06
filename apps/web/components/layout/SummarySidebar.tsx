@@ -7,6 +7,8 @@ import type { HealthResponse } from "@/features/system/types";
 import type { DailyWeather } from "@/features/weather/types";
 import { cn } from "@/lib/utils";
 import { formatSourceTime, type DataState } from "@/lib/weather-state";
+import { DEMO_SOURCE } from "@/lib/demo-data";
+import { isDemoMode } from "@/lib/weather-api";
 
 type Props = {
   city: string;
@@ -52,6 +54,7 @@ export function SummarySidebar({
   const officialAdvice = adviceState.kind === "ready" && advisory;
   const riskLevel = officialAdvice ? advisory.riskLevel : "info";
   const apiOnline = health?.status === "ok" && !healthError;
+  const localDemo = isDemoMode() || weatherState.kind === "demo" || health?.status === "demo";
   const suggestions = adviceState.showData ? advisory?.suggestions ?? [] : [];
   const visibleDays = weatherState.showData ? days : [];
 
@@ -83,7 +86,7 @@ export function SummarySidebar({
       <div className="p-4">
         <div className="mb-3 flex items-center gap-2">
           <Sprout className="h-4 w-4 text-field" />
-          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">本週農事建議</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">{localDemo ? "示範操作提示" : "本週農事建議"}</p>
           {suggestions.length > 0 && (
             <span className="ml-auto text-[11px] font-medium text-stone-400">{suggestions.length} 項</span>
           )}
@@ -108,7 +111,7 @@ export function SummarySidebar({
       <div className="border-t border-stone-100 p-4">
         <div className="mb-3 flex items-center gap-2">
           <CalendarDays className="h-4 w-4 text-field" />
-          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">一週預報</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">{localDemo ? "一週示範（固定樣本）" : "一週預報"}</p>
         </div>
         {visibleDays.length > 0 ? (
           <div className="divide-y divide-stone-100">
@@ -124,13 +127,13 @@ export function SummarySidebar({
       {/* Footer: system + data */}
       <div className="border-t border-stone-100 bg-stone-50/50 p-4">
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="flex items-center gap-1.5 text-stone-400">
               {apiOnline ? <CheckCircle2 className="h-3 w-3 text-field" /> : <WifiOff className="h-3 w-3 text-red-400" />}
-              {weatherState.kind === "config" ? "服務尚未配置" : healthLoading ? "檢查中" : apiOnline ? `API 在線 v${health?.version}` : "API 離線"}
+              {localDemo ? "示範模式（未連線 API）" : weatherState.kind === "config" ? "服務尚未配置" : healthLoading ? "檢查中" : apiOnline ? `API 在線 v${health?.version}` : "API 離線"}
             </span>
             <span className="text-stone-400">
-              {sourceLabel(source)} · {formatSourceTime(updatedAt)}
+              {sourceLabel(source)} · {localDemo ? "固定樣本，非更新時間" : formatSourceTime(updatedAt)}
             </span>
           </div>
           <div className="flex items-center gap-2 text-[11px] text-stone-400">
@@ -211,6 +214,7 @@ function riskTitle(level: string) {
 
 function sourceLabel(source?: string) {
   if (!source) return "--";
+  if (source === DEMO_SOURCE) return "示範資料";
   if (source === "Mock Weather Data" || source === "模擬天氣資料") return "模擬";
   if (source === "CWA OpenData") return "CWA";
   return source;
