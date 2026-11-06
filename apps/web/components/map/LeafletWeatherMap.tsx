@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { WeeklyAdvisoryResponse } from "@/features/advisory/types";
 import type { WeatherMapConfig, WeatherOverlay } from "@/features/weather-map/types";
 import { useWeatherMapState } from "@/features/weather-map/useWeatherMapState";
-import { useStations } from "@/features/weather/hooks";
 import type { StationsResponse, WeatherStation } from "@/features/weather/types";
 import { MapFloatingAdvice } from "./MapFloatingAdvice";
 import { MapLayerControl } from "./MapLayerControl";
 import { MapLegend } from "./MapLegend";
 import { MapTimeline } from "./MapTimeline";
+import type { DataState } from "@/lib/weather-state";
 
 type LeafletModule = typeof import("leaflet");
 type LeafletMap = import("leaflet").Map;
@@ -22,7 +22,9 @@ type Props = {
   district?: string;
   crop?: string;
   advisory?: WeeklyAdvisoryResponse;
+  adviceState: DataState;
   stations?: StationsResponse;
+  stationState: DataState;
   onLocationSelect?: (city: string, district?: string) => void;
 };
 
@@ -42,7 +44,7 @@ const TAIWAN_POINTS: MapPoint[] = [
   { label: "高屏", city: "高雄市", district: "美濃區", lat: 22.6273, lon: 120.3014 },
 ];
 
-export function LeafletWeatherMap({ config, city, district, crop, advisory, stations: stationsProp, onLocationSelect }: Props) {
+export function LeafletWeatherMap({ config, city, district, crop, advisory, adviceState, stations: stationsData, stationState, onLocationSelect }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const leafletRef = useRef<LeafletModule | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -51,8 +53,6 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, stat
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const map = useWeatherMapState(config, city, district);
-  const stationsFromHook = useStations();
-  const stationsData = stationsProp ?? stationsFromHook.data;
 
   useEffect(() => {
     let disposed = false;
@@ -133,8 +133,8 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, stat
   useEffect(() => {
     if (!mapReady || !leafletRef.current || !stationLayerRef.current) return;
 
-    drawStationMarkers(leafletRef.current, stationLayerRef.current, stationsData?.stations ?? [], city, onLocationSelect);
-  }, [city, mapReady, stationsData, onLocationSelect]);
+    drawStationMarkers(leafletRef.current, stationLayerRef.current, stationState.showData ? stationsData?.stations ?? [] : [], city, onLocationSelect);
+  }, [city, mapReady, stationsData, stationState.showData, onLocationSelect]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
@@ -147,7 +147,7 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, stat
 
   return (
     <section className="relative overflow-hidden rounded-md border border-stone-200 bg-stone-950 shadow-sm">
-      <div ref={containerRef} className="h-[520px] min-h-[70vh] w-full" aria-label="台灣天氣地圖" />
+      <div ref={containerRef} className="relative z-0 h-[520px] min-h-[70vh] w-full" aria-label="台灣天氣地圖" />
 
       {!mapReady && !mapError && (
         <div className="absolute inset-0 grid place-items-center bg-stone-950 text-sm font-medium text-white">正在載入地圖...</div>
@@ -159,14 +159,14 @@ export function LeafletWeatherMap({ config, city, district, crop, advisory, stat
         </div>
       )}
 
-      <div className="absolute left-4 top-4 max-w-[calc(100%-2rem)] rounded-md bg-white/95 px-4 py-3 text-stone-900 shadow-sm backdrop-blur">
+      <div className="absolute left-4 top-20 max-w-[calc(100%-2rem)] rounded-md bg-white/95 px-4 py-3 text-stone-900 shadow-sm backdrop-blur">
         <p className="text-xs font-medium text-stone-500">{map.currentTimeLabel} 模擬天氣圖層 · Leaflet mock map</p>
         <h2 className="text-lg font-semibold">{city}{district ? `, ${district}` : ""}</h2>
         <p className="mt-1 text-xs text-stone-500">點擊地圖區域或測站可切換左側摘要與預報資料</p>
       </div>
 
       <MapLayerControl value={map.overlay} onChange={map.setOverlay} />
-      <MapFloatingAdvice advisory={advisory} crop={crop} />
+      <MapFloatingAdvice advisory={advisory} crop={crop} state={adviceState} />
       <MapLegend overlay={map.overlay} />
       <MapTimeline
         labels={map.timeLabels}

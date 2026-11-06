@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CloudRain, CloudSun, MapPin, RefreshCw, ThermometerSun, Wind } from "lucide-react";
 import { AlertBanner } from "@/components/farmer/AlertBanner";
 import { CropSelector } from "@/components/farmer/CropSelector";
@@ -16,11 +16,14 @@ import { useSystemHealth } from "@/features/system/hooks";
 import { getWeatherMapConfig } from "@/features/weather-map/config";
 import { useStations, useWeeklyWeather } from "@/features/weather/hooks";
 import { tempToColor, tempToGradient } from "@/lib/utils";
+import { isDemoMode } from "@/lib/weather-api";
+import { currentForecastDays, currentStations, currentWeatherDay, formatSourceTime, getAdviceState, getStationState, getWeatherState } from "@/lib/weather-state";
 
 const FALLBACK_CITY = "臺北市";
 const FALLBACK_DISTRICT = "北投區";
 
 export default function HomePage() {
+  const demoMode = isDemoMode();
   const [city, setCity] = useState(FALLBACK_CITY);
   const [district, setDistrict] = useState(FALLBACK_DISTRICT);
   const [crop, setCrop] = useState("水稻");
@@ -29,9 +32,27 @@ export default function HomePage() {
   const locations = useLocations();
   const health = useSystemHealth();
   const stations = useStations();
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const weatherState = getWeatherState({...weather, city, district, now});
+  const adviceState = getAdviceState({weather: weatherState, ...advisory});
+  const stationState = getStationState({...stations, now});
+  const mapStations = useMemo(() => stations.data && ({...stations.data, stations: stationState.showData ? currentStations(stations.data.stations, now) : []}), [stations.data, stationState.showData, now]);
 
   const mapConfig = useMemo(() => getWeatherMapConfig(), []);
   const mapMode = mapConfig.provider === "windy" && mapConfig.windyApiKey ? "Windy" : "Leaflet 模擬";
+
+  const districtsForCity = useCallback((selectedCity: string) => {
+    const observedTowns = Array.from(new Set(stations.data?.stations
+      .filter(station => station.countyName === selectedCity && station.townName)
+      .map(station => station.townName) ?? [])).sort();
+    if (observedTowns.length) return observedTowns;
+    const configuredTowns = locations.data?.locations.find(location => location.city === selectedCity)?.districts;
+    return configuredTowns?.length ? configuredTowns : selectedCity === FALLBACK_CITY ? [FALLBACK_DISTRICT] : [];
+  }, [stations.data, locations.data]);
 
   // Build county/town lists from station data
   const { countyList, townList } = useMemo(() => {
@@ -41,7 +62,7 @@ export default function HomePage() {
         countyList: locCounties.length > 0
           ? locCounties.map((l) => ({ name: l.city, count: 0 }))
           : [{ name: FALLBACK_CITY, count: 0 }],
-        townList: ["北投區"],
+        townList: districtsForCity(city),
       };
     }
 
@@ -60,41 +81,29 @@ export default function HomePage() {
       .map(([name, towns]) => ({ name, count: towns.size }))
       .sort((a, b) => b.count - a.count);
 
-    const towns = Array.from(countyMap.get(city) ?? countyMap.values().next().value ?? new Set<string>());
-    const sortedTowns = [...towns].sort();
-
     return {
       countyList: sorted,
-      townList: sortedTowns.length > 0 ? sortedTowns : [FALLBACK_DISTRICT],
+      townList: districtsForCity(city),
     };
-  }, [stations.data, city, locations.data]);
+  }, [stations.data, city, locations.data, districtsForCity]);
 
   function handleCity(value: string) {
     setCity(value);
-    const towns = stations.data?.stations
-      .filter((s) => s.countyName === value && s.townName)
-      .map((s) => s.townName!)
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .sort() ?? [];
-    setDistrict(towns[0] ?? FALLBACK_DISTRICT);
+    setDistrict(districtsForCity(value)[0] ?? "");
   }
 
   const handleLocationSelect = useCallback(
     (selectedCity: string, selectedDistrict?: string) => {
       setCity(selectedCity);
-      const towns = stations.data?.stations
-        .filter((s) => s.countyName === selectedCity && s.townName)
-        .map((s) => s.townName!)
-        .filter((v, i, a) => a.indexOf(v) === i)
-        .sort() ?? [];
+      const towns = districtsForCity(selectedCity);
 
       if (selectedDistrict && towns.includes(selectedDistrict)) {
         setDistrict(selectedDistrict);
       } else {
-        setDistrict(towns[0] ?? selectedDistrict ?? FALLBACK_DISTRICT);
+        setDistrict(towns[0] ?? "");
       }
     },
-    [stations.data],
+    [districtsForCity],
   );
 
   function refreshAll() {
@@ -105,8 +114,8 @@ export default function HomePage() {
     stations.reload();
   }
 
-  const firstDay = weather.data?.days[0];
-  const allDays = weather.data?.days ?? [];
+  const allDays = weatherState.showData ? weatherState.kind === "demo" ? weather.data?.days ?? [] : currentForecastDays(weather.data?.days ?? [], now) : [];
+  const firstDay = weatherState.kind === "demo" ? allDays[0] : currentWeatherDay(allDays, now);
   const isLoading = weather.loading || advisory.loading;
 
   const themeColor = useMemo(() => {
@@ -142,6 +151,8 @@ export default function HomePage() {
               weatherError={weather.error}
               advisoryError={advisory.error}
               themeColor={themeColor}
+              weatherState={weatherState}
+              adviceState={adviceState}
             />
           </div>
         </aside>
@@ -154,14 +165,14 @@ export default function HomePage() {
               <div className="max-w-lg">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
                   <CloudSun className="h-3.5 w-3.5" />
-                  CWA 開放資料 · 農事天氣
+                  {demoMode ? "示範資料 · 非即時天氣" : "CWA 開放資料 · 農事天氣"}
                 </div>
                 <h1 className="mt-4 text-3xl font-bold tracking-tight md:text-4xl">
-                  一週天氣風險，<br />
-                  <span className="text-sun-light">田間工作一手掌握</span>
+                  {demoMode ? "農事天氣示範，" : "一週天氣風險，"}<br />
+                  <span className="text-sun-light">{demoMode ? "先體驗畫面操作" : "田間工作一手掌握"}</span>
                 </h1>
                 <p className="mt-3 text-sm leading-relaxed text-white/75">
-                  選擇地區與作物，即時取得溫度、降雨、風速預報與農事提醒建議。
+                  {demoMode ? "切換地區與作物，操作固定範例；不代表即時天氣或實際農事建議。" : "選擇地區與作物，即時取得溫度、降雨、風速預報與農事提醒建議。"}
                 </p>
 
                 {firstDay && (
@@ -244,28 +255,30 @@ export default function HomePage() {
               weatherError={weather.error}
               advisoryError={advisory.error}
               themeColor={themeColor}
+              weatherState={weatherState}
+              adviceState={adviceState}
             />
           </section>
 
           {/* Error banner */}
-          {(weather.error || advisory.error || locations.error) && (
-            <AlertBanner level="warning" title="API 連線異常" message="部分資料暫時無法同步，系統會保留目前可用內容。" />
-          )}
+          {weatherState.kind !== "ready" && weatherState.kind !== "loading" && <AlertBanner level="warning" title={weatherState.title} message={weatherState.message} />}
+          {adviceState.kind === "error" && weatherState.showData && <AlertBanner level="warning" title="農事提醒載入失敗" message={adviceState.message} />}
+          {stationState.kind !== "ready" && stationState.kind !== "loading" && <AlertBanner level="warning" title={`測站：${stationState.title}`} message={`${stationState.message} 來源時間：${formatSourceTime(stations.data?.updatedAt)}`} />}
 
           {/* Map */}
           <section className="animate-fade-in rounded-xl shadow-map overflow-hidden">
-            <WeatherMapShell city={city} district={district} crop={crop} advisory={advisory.data} stations={stations.data} onLocationSelect={handleLocationSelect} />
+            <WeatherMapShell city={city} district={district} crop={crop} advisory={adviceState.showData ? advisory.data : undefined} adviceState={adviceState} stations={mapStations} stationState={stationState} onLocationSelect={handleLocationSelect} />
           </section>
 
           {/* Alert banners */}
-          {advisory.data?.alerts.map((alert) => (
+          {adviceState.kind === "ready" && advisory.data?.alerts.map((alert) => (
             <AlertBanner key={`${alert.type}-${alert.title}`} level={alert.level} title={alert.title} message={alert.message} />
           ))}
 
           {/* Today + Advice */}
           <section className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
-            <CurrentWeatherCard day={firstDay} loading={weather.loading} source={weather.data?.source} />
-            <FarmerAdviceCard advisory={advisory.data} loading={advisory.loading} />
+            <CurrentWeatherCard day={firstDay} loading={weather.loading} source={weather.data?.source} state={weatherState} />
+            <FarmerAdviceCard advisory={advisory.data} loading={advisory.loading} state={adviceState} />
           </section>
         </div>
       </div>

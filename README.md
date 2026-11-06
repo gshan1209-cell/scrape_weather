@@ -3,8 +3,18 @@
 這是一個以台灣 CWA OpenData 為核心的 MVP monorepo，提供一週天氣、農事風險提醒，以及 Leaflet + OpenStreetMap 天氣地圖。
 
 ### DEMO截圖:  ![alt text](demo.png)
-### DEMO網址:https://scrape-weather-rfnhzwdm5-gshan1209-cells-projects.vercel.app/
+### DEMO網址:https://scrape-weather-nine.vercel.app/
+
+此入口為前端展示。沒有設定 API 時使用本機固定示範資料，畫面會標示「示範資料／非即時天氣」，不需正式後端即可體驗操作。正式後端、CORS 與授權 CWA Live 整合仍未驗收，不能由畫面可操作推定即時資料可用；本機 `localhost` 位址不能作為正式訪客使用的後端。
 ### 開發進度報告: https://github.com/gshan1209-cell/scrape_weather/blob/main/docs/scrape_weather_development_summary.md
+
+沒有 `NEXT_PUBLIC_API_BASE_URL`（缺少、空值或空白）時，畫面資料層提供五個城市與行政區、四種作物的固定示範；樣本期間為 2024-01-01 至 2024-01-07，`updatedAt` 為 null。數字與提醒不是即時天氣、真實測站或實際農事建議；切換或重新整理不會偽造新的來源時間。未支援選項會顯示無資料狀態。
+
+一旦明確指定 API，production、test 或未指定模式均要求絕對 HTTPS base URL（含實際 API 路徑，例如 `/api/v1`），拒絕 loopback／unspecified 位址、帳密、query 或 fragment。非法設定在 fetch 前 fail closed；實際API失敗也不會偷偷切成示範，不改猜同源 API。URL 通過語法檢查不代表已通過 DNS、TLS、CORS 或真實資料驗收。
+
+底層 `apiGet` 保留嚴格傳輸契約：只有明確 `NODE_ENV=development` 且由本機 loopback 頁面開啟時，才允許本機 HTTP 開發 API；畫面未設定API則由上層使用示範資料，不發loopback請求。`next build`／`next start` 的 production 不會啟用開發例外。公開 API base是建置時內嵌值，本次沒有配置正式後端。
+
+地圖沿用 Leaflet 的示範圖層與 OpenStreetMap 底圖；實際開啟地圖會向 `https://{s}.tile.openstreetmap.org` 取得底圖圖磚，這不是天氣觀測或CWA資料。測試可攔截該圖磚使用合成本機圖片；不代表真實地圖天氣已驗收。
 
 ## 技術架構
 

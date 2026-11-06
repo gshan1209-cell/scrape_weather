@@ -1,41 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useApiResource } from "@/lib/use-api-resource";
 import { fetchStations, fetchWeeklyWeather } from "./api";
-import { StationsResponse, WeeklyWeatherResponse } from "./types";
 
 export function useWeeklyWeather(city: string, district?: string) {
-  const [data, setData] = useState<WeeklyWeatherResponse>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error>();
-
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(undefined);
-    fetchWeeklyWeather(city, district)
-      .then(setData)
-      .catch(setError)
-      .finally(() => setLoading(false));
-  }, [city, district]);
-
-  useEffect(() => load(), [load]);
-
-  return { data, loading, error, reload: load };
+  const request = useCallback(() => fetchWeeklyWeather(city, district), [city, district]);
+  return useApiResource(request);
 }
 
 export function useStations() {
-  const [data, setData] = useState<StationsResponse>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error>();
-
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(undefined);
-    fetchStations()
-      .then(setData)
-      .catch(setError)
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => load(), [load]);
-
-  return { data, loading, error, reload: load };
+  const request = useCallback(() => fetchStations(), []);
+  return useApiResource(request);
 }

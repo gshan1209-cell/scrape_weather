@@ -1,9 +1,11 @@
 import type { WeatherMapConfig, WeatherMapProvider, WeatherOverlay } from "./types";
+import { isDemoMode } from "@/lib/weather-api";
 
 const overlays: WeatherOverlay[] = ["rain", "wind", "temperature", "clouds", "pressure"];
 
 export function getWeatherMapConfig(): WeatherMapConfig {
-  const provider = normalizeProvider(process.env.NEXT_PUBLIC_WEATHER_MAP_PROVIDER);
+  const demoMode = isDemoMode();
+  const provider = demoMode ? "mock" : normalizeProvider(process.env.NEXT_PUBLIC_WEATHER_MAP_PROVIDER);
   const defaultOverlay = normalizeOverlay(process.env.NEXT_PUBLIC_WINDY_DEFAULT_OVERLAY);
 
   return {
@@ -12,7 +14,7 @@ export function getWeatherMapConfig(): WeatherMapConfig {
     defaultLon: toNumber(process.env.NEXT_PUBLIC_WINDY_DEFAULT_LON, 120.9605),
     defaultZoom: toNumber(process.env.NEXT_PUBLIC_WINDY_DEFAULT_ZOOM, 7),
     defaultOverlay,
-    windyApiKey: process.env.NEXT_PUBLIC_WINDY_API_KEY || process.env.NEXT_PUBLIC_WINDY_MAP_API_KEY || undefined,
+    windyApiKey: demoMode ? undefined : process.env.NEXT_PUBLIC_WINDY_API_KEY || process.env.NEXT_PUBLIC_WINDY_MAP_API_KEY || undefined,
   };
 }
 

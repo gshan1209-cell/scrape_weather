@@ -2,8 +2,11 @@ import { CloudSun, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { WeeklyAdvisoryResponse } from "@/features/advisory/types";
+import type { DataState } from "@/lib/weather-state";
+import { isDemoMode } from "@/lib/weather-api";
 
-export function FarmerAdviceCard({ advisory, loading }: { advisory?: WeeklyAdvisoryResponse; loading: boolean }) {
+export function FarmerAdviceCard({ advisory, state }: { advisory?: WeeklyAdvisoryResponse; loading: boolean; state: DataState }) {
+  const demoMode = isDemoMode() || state.kind === "demo";
   return (
     <Card>
       <div className="flex items-center justify-between gap-3">
@@ -11,26 +14,26 @@ export function FarmerAdviceCard({ advisory, loading }: { advisory?: WeeklyAdvis
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-field-50">
             <CloudSun className="h-4 w-4 text-field" />
           </div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">農事提醒</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">{demoMode ? "示範提醒（非實際農事建議）" : "農事提醒"}</p>
         </div>
-        {advisory && <Badge tone={advisory.riskLevel}>{riskLabel(advisory.riskLevel)}</Badge>}
+        <Badge tone={state.kind === "ready" ? advisory?.riskLevel : state.tone}>{state.kind === "ready" && advisory ? riskLabel(advisory.riskLevel) : state.title}</Badge>
       </div>
 
-      {loading ? (
+      {state.kind === "loading" ? (
         <div className="mt-5 flex items-center gap-2 text-sm text-stone-400">
           <span className="h-2 w-2 animate-pulse-soft rounded-full bg-field" />
-          正在產生建議...
+          {demoMode ? "正在載入示範提醒..." : "正在產生建議..."}
         </div>
-      ) : advisory ? (
+      ) : state.showData && advisory ? (
         <>
           <p className="mt-4 text-lg font-bold leading-relaxed text-stone-900">{advisory.summary}</p>
           <div className="mt-4 flex items-center gap-1.5 text-xs text-stone-400">
             <TrendingUp className="h-3.5 w-3.5" />
-            {advisory.suggestions.length} 項作業建議
+            {advisory.suggestions.length} 項{state.kind === "demo" ? "操作範例" : "作業建議"}
           </div>
         </>
       ) : (
-        <div className="mt-5 text-sm text-stone-400">尚無農事提醒。</div>
+        <div className="mt-5 text-sm text-stone-500">{state.title}：{state.message}</div>
       )}
     </Card>
   );
