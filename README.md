@@ -8,6 +8,10 @@
 此入口為前端展示。正式後端、CORS 與授權 CWA Live 整合尚未完成驗收，不能由前端可開啟推定即時資料可用。公開前端必須設定可用的 HTTPS `NEXT_PUBLIC_API_BASE_URL`；本機 `localhost` 位址不能作為訪客使用的後端。
 ### 開發進度報告: https://github.com/gshan1209-cell/scrape_weather/blob/main/docs/scrape_weather_development_summary.md
 
+API 設定採 runtime fail closed：production、test 或未指定模式都必須提供絕對 HTTPS API base URL（含實際 API 路徑，例如 `/api/v1`），不接受 loopback／unspecified 位址、帳密、query 或 fragment。缺少、空白或無效時，畫面顯示正式天氣後端未設定，且不發出 API 請求；不會改猜同源 API。URL 通過語法檢查不代表已通過 DNS、TLS、CORS 或真實資料驗收。
+
+只有明確 `NODE_ENV=development` 且頁面由本機 loopback 主機開啟時，才允許未設定值預設為 `http://localhost:8000/api/v1`，或使用明確設定的 HTTP 開發 API。`next build`／`next start` 的 production 即使在 localhost 驗收，也不會啟用這個開發例外。`NEXT_PUBLIC_API_BASE_URL` 是建置時內嵌的公開值，正式設定日後須於核實後由維運方重新建置；本次沒有配置正式後端。
+
 ## 技術架構
 
 - `apps/api`：FastAPI、Pydantic、httpx、SQLAlchemy-ready models

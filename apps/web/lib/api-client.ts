@@ -7,21 +7,21 @@ export class ApiClientError extends Error {
 
 function isLoopback(hostname: string): boolean {
   const host = hostname.toLowerCase().replace(/\.+$/, "");
-  return host === "localhost" || host.endsWith(".localhost") || host === "[::1]" || host === "0.0.0.0" || /^127\./.test(host) || /^\[::(?:ffff:)?7f[\da-f]{2}:[\da-f]{1,4}\]$/.test(host);
+  return host === "localhost" || host.endsWith(".localhost") || host === "[::1]" || host === "[::]" || host === "0.0.0.0" || /^127\./.test(host) || /^\[::(?:ffff:)?(?:7f[\da-f]{2}:[\da-f]{1,4}|0:0)\]$/.test(host);
 }
 
 function apiBaseUrl(): string {
-  const localPage = typeof window !== "undefined" && isLoopback(window.location.hostname);
+  const localDevelopment = process.env.NODE_ENV === "development" && typeof window !== "undefined" && isLoopback(window.location.hostname);
   const configured = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
-  if (!configured && localPage) return "http://localhost:8000/api/v1";
+  if (!configured && localDevelopment) return "http://localhost:8000/api/v1";
   try {
     if (!configured) throw new Error();
     const url = new URL(configured);
-    if (!localPage && (url.protocol !== "https:" || isLoopback(url.hostname))) throw new Error();
-    if (!["https:", "http:"].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new Error();
+    if (!localDevelopment && (url.protocol !== "https:" || isLoopback(url.hostname))) throw new Error();
+    if (!["https:", "http:"].includes(url.protocol) || url.username || url.password || url.href.includes("?") || url.href.includes("#")) throw new Error();
     return url.toString().replace(/\/$/, "");
   } catch {
-    throw new ApiClientError("API_NOT_CONFIGURED", "天氣服務尚未配置，暫時無法取得預報資料。");
+    throw new ApiClientError("API_NOT_CONFIGURED", "尚未設定有效的正式天氣後端，暫時無法取得預報資料。");
   }
 }
 
