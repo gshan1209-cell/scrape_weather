@@ -1,0 +1,64 @@
+name: Weather PR10-12 Combined Integration QA (no deployment)
+on:
+  pull_request:
+    paths:
+      - "apps/api/**"
+      - "apps/web/**"
+      - ".github/workflows/weather-pr10-12-integration-qa.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backend:
+    name: Synthetic backend integration; no real CWA
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/api/requirements.txt
+      - name: Install backend test requirements
+        run: python -m pip install -r apps/api/requirements.txt
+      - name: Python syntax check
+        run: python -m compileall -q apps/api/app apps/api/tests
+      - name: Execute full backend suite with synthetic fixtures
+        working-directory: apps/api
+        env:
+          CWA_API_KEY: ""
+        run: python -m pytest -q
+      - name: Run root governance and CWA TLS policy tests
+        run: python -m pytest -q tests
+  frontend:
+    name: Web regressions and production-mode build, no deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install locked Web dependencies
+        working-directory: apps/web
+        run: npm ci
+      - name: Run Web unit tests
+        working-directory: apps/web
+        run: npm test
+      - name: Web lint
+        working-directory: apps/web
+        run: npm run lint
+      - name: Web production build only (not deploy)
+        working-directory: apps/web
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_API_BASE_URL: ""
+          NEXT_PUBLIC_WEATHER_MAP_PROVIDER: mock
+        run: npm run build
