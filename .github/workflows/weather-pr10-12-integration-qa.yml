@@ -30,7 +30,6 @@ jobs:
         working-directory: apps/api
         env:
           CWA_API_KEY: ""
-          CWA_VERIFY_SSL: "true"
         run: python -m pytest -q
   frontend:
     name: Web regressions and production-mode build, no deployment
