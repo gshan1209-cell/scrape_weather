@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
+import re
 import httpx
 
 from app.core.config import settings
@@ -203,14 +204,14 @@ class WeatherService:
         number = self._to_int(value)
         if name in {"Wx"} or "weather" in lowered or name == "天氣現象":
             bucket["weather"] = value or bucket["weather"]
+        elif name in {"CI", "MinCI", "MaxCI"} or "comfort" in lowered or "舒適" in name:
+            bucket["comfort"] = value
         elif name in {"MaxT", "Tmax"} or "max" in lowered or name == "最高溫度":
             bucket["maxTemp"] = number
         elif name in {"MinT", "Tmin"} or "min" in lowered or name == "最低溫度":
             bucket["minTemp"] = number
         elif name in {"PoP", "PoP12h", "PoP6h"} or "rain" in lowered or "降雨" in name:
             bucket["rainProbability"] = number
-        elif name in {"CI"} or "comfort" in lowered or "舒適" in name:
-            bucket["comfort"] = value
         elif "uv" in lowered or "紫外" in name:
             bucket["uvIndex"] = number
         elif "wind" in lowered or "風" in name:
@@ -221,8 +222,10 @@ class WeatherService:
     def _to_int(self, value: str | None) -> int | None:
         if value is None:
             return None
-        digits = "".join(ch for ch in str(value) if ch.isdigit())
-        return int(digits) if digits else None
+        # These schema fields are integers: never concatenate digits from a
+        # fraction, range, or unit-bearing string, nor discard a negative sign.
+        text = str(value).strip()
+        return int(text) if re.fullmatch(r"[+-]?[0-9]+", text) else None
 
     def _mock_weather(self, city: str, district: str | None, reason: str = "mock_fallback") -> WeeklyWeatherResponse:
         today = datetime.now(TAIPEI_TZ)
