@@ -31,6 +31,8 @@ jobs:
         env:
           CWA_API_KEY: ""
         run: python -m pytest -q
+      - name: Run root governance and CWA TLS policy tests
+        run: python -m pytest -q tests
   frontend:
     name: Web regressions and production-mode build, no deployment
     runs-on: ubuntu-latest
