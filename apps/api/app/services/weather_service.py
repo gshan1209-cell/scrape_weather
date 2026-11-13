@@ -5,6 +5,7 @@ import httpx
 from app.core.config import settings
 from app.schemas.weather import DailyWeather, StationsResponse, WeatherStation, WeeklyWeatherResponse
 from app.services.cwa_client import CwaClient
+from app.services.cache_service import CacheService
 
 
 TAIPEI_TZ = timezone(timedelta(hours=8))
@@ -13,11 +14,23 @@ TAIPEI_TZ = timezone(timedelta(hours=8))
 class WeatherService:
     def __init__(self, cwa_client: CwaClient | None = None) -> None:
         self.cwa_client = cwa_client or CwaClient()
+        self._forecast_cache = CacheService()
 
     async def get_weekly_weather(self, city: str, district: str | None = None) -> WeeklyWeatherResponse:
         try:
-            raw = await self.cwa_client.fetch_weekly_forecast(settings.CWA_WEEKLY_DATASET_ID, city)
-            return self._normalize_cwa(raw, city=city, district=district)
+            dataset = settings.CWA_WEEKLY_DATASET_ID
+            key = (dataset, city)
+            ttl = settings.CACHE_TTL_MINUTES
+            cached = self._forecast_cache.get(key, ttl) if ttl > 0 else None
+            if cached is not None:
+                result = self._normalize_cwa(cached, city=city, district=district)
+                if result.dataStatus == "live":
+                    return result
+            raw = await self.cwa_client.fetch_weekly_forecast(dataset, city)
+            result = self._normalize_cwa(raw, city=city, district=district)
+            if ttl > 0 and result.dataStatus == "live":
+                self._forecast_cache.set(key, raw)
+            return result
         except Exception as exc:
             return self._mock_weather(city=city, district=district, reason=self._failure_reason(exc))
 
