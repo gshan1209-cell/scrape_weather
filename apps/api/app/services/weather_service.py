@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
+import math
 import httpx
 
 from app.core.config import settings
@@ -62,11 +63,23 @@ class WeatherService:
         stations: list[WeatherStation] = []
         for entry in station_list:
             geo = entry.get("GeoInfo", {})
-            coords = geo.get("Coordinates", [None]) or [None]
-            coord = coords[0] if coords else {}
-            lat = coord.get("StationLatitude") or coord.get("CoordinateLatitude")
-            lon = coord.get("StationLongitude") or coord.get("CoordinateLongitude")
-            if not lat or not lon:
+            coords = geo.get("Coordinates")
+            coord = coords[0] if isinstance(coords, list) and coords else None
+            if not isinstance(coord, dict):
+                continue
+            lat = coord.get("StationLatitude")
+            lon = coord.get("StationLongitude")
+            if lat is None:
+                lat = coord.get("CoordinateLatitude")
+            if lon is None:
+                lon = coord.get("CoordinateLongitude")
+            # Skip only the invalid station, preserving valid zero coordinates.
+            if isinstance(lat, bool) or isinstance(lon, bool):
+                continue
+            lat, lon = self._to_float(lat), self._to_float(lon)
+            if (lat is None or lon is None or not math.isfinite(lat)
+                    or not math.isfinite(lon) or not -90 <= lat <= 90
+                    or not -180 <= lon <= 180):
                 continue
 
             weather_elements = entry.get("WeatherElement", {})
