@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
+import math
+import re
 import httpx
 
 from app.core.config import settings
 from app.schemas.weather import DailyWeather, StationsResponse, WeatherStation, WeeklyWeatherResponse
 from app.services.cwa_client import CwaClient
+from app.services.cache_service import CacheService
 
 
 TAIPEI_TZ = timezone(timedelta(hours=8))
@@ -13,11 +16,23 @@ TAIPEI_TZ = timezone(timedelta(hours=8))
 class WeatherService:
     def __init__(self, cwa_client: CwaClient | None = None) -> None:
         self.cwa_client = cwa_client or CwaClient()
+        self._forecast_cache = CacheService()
 
     async def get_weekly_weather(self, city: str, district: str | None = None) -> WeeklyWeatherResponse:
         try:
-            raw = await self.cwa_client.fetch_weekly_forecast(settings.CWA_WEEKLY_DATASET_ID, city)
-            return self._normalize_cwa(raw, city=city, district=district)
+            dataset = settings.CWA_WEEKLY_DATASET_ID
+            key = (dataset, city)
+            ttl = settings.CACHE_TTL_MINUTES
+            cached = self._forecast_cache.get(key, ttl) if ttl > 0 else None
+            if cached is not None:
+                result = self._normalize_cwa(cached, city=city, district=district)
+                if result.dataStatus == "live":
+                    return result
+            raw = await self.cwa_client.fetch_weekly_forecast(dataset, city)
+            result = self._normalize_cwa(raw, city=city, district=district)
+            if ttl > 0 and result.dataStatus == "live":
+                self._forecast_cache.set(key, raw)
+            return result
         except Exception as exc:
             return self._mock_weather(city=city, district=district, reason=self._failure_reason(exc))
 
@@ -62,11 +77,23 @@ class WeatherService:
         stations: list[WeatherStation] = []
         for entry in station_list:
             geo = entry.get("GeoInfo", {})
-            coords = geo.get("Coordinates", [None]) or [None]
-            coord = coords[0] if coords else {}
-            lat = coord.get("StationLatitude") or coord.get("CoordinateLatitude")
-            lon = coord.get("StationLongitude") or coord.get("CoordinateLongitude")
-            if not lat or not lon:
+            coords = geo.get("Coordinates")
+            coord = coords[0] if isinstance(coords, list) and coords else None
+            if not isinstance(coord, dict):
+                continue
+            lat = coord.get("StationLatitude")
+            lon = coord.get("StationLongitude")
+            if lat is None:
+                lat = coord.get("CoordinateLatitude")
+            if lon is None:
+                lon = coord.get("CoordinateLongitude")
+            # Skip only the invalid station, preserving valid zero coordinates.
+            if isinstance(lat, bool) or isinstance(lon, bool):
+                continue
+            lat, lon = self._to_float(lat), self._to_float(lon)
+            if (lat is None or lon is None or not math.isfinite(lat)
+                    or not math.isfinite(lon) or not -90 <= lat <= 90
+                    or not -180 <= lon <= 180):
                 continue
 
             weather_elements = entry.get("WeatherElement", {})
@@ -203,14 +230,14 @@ class WeatherService:
         number = self._to_int(value)
         if name in {"Wx"} or "weather" in lowered or name == "天氣現象":
             bucket["weather"] = value or bucket["weather"]
+        elif name in {"CI", "MinCI", "MaxCI"} or "comfort" in lowered or "舒適" in name:
+            bucket["comfort"] = value
         elif name in {"MaxT", "Tmax"} or "max" in lowered or name == "最高溫度":
             bucket["maxTemp"] = number
         elif name in {"MinT", "Tmin"} or "min" in lowered or name == "最低溫度":
             bucket["minTemp"] = number
         elif name in {"PoP", "PoP12h", "PoP6h"} or "rain" in lowered or "降雨" in name:
             bucket["rainProbability"] = number
-        elif name in {"CI"} or "comfort" in lowered or "舒適" in name:
-            bucket["comfort"] = value
         elif "uv" in lowered or "紫外" in name:
             bucket["uvIndex"] = number
         elif "wind" in lowered or "風" in name:
@@ -221,8 +248,10 @@ class WeatherService:
     def _to_int(self, value: str | None) -> int | None:
         if value is None:
             return None
-        digits = "".join(ch for ch in str(value) if ch.isdigit())
-        return int(digits) if digits else None
+        # These schema fields are integers: never concatenate digits from a
+        # fraction, range, or unit-bearing string, nor discard a negative sign.
+        text = str(value).strip()
+        return int(text) if re.fullmatch(r"[+-]?[0-9]+", text) else None
 
     def _mock_weather(self, city: str, district: str | None, reason: str = "mock_fallback") -> WeeklyWeatherResponse:
         today = datetime.now(TAIPEI_TZ)
