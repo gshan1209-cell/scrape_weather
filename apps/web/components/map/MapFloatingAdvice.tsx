@@ -7,7 +7,7 @@ export function MapFloatingAdvice({ advisory, crop, state }: { advisory?: Weekly
   const officialAdvice = state.kind === "ready" && advisory;
   const demoMode = isDemoMode() || state.kind === "demo";
   return (
-    <div className="absolute bottom-24 right-3 max-w-[220px] rounded-xl bg-white/95 p-3.5 text-stone-900 shadow-elevated backdrop-blur md:bottom-20">
+    <div className="absolute bottom-48 right-3 max-w-[220px] rounded-xl bg-white/95 p-3.5 text-stone-900 shadow-elevated backdrop-blur md:bottom-20">
       <div className="flex items-center justify-between gap-2">
         <div className="text-xs font-semibold">{demoMode ? "示範訊號" : "田間訊號"}</div>
         <Badge tone={officialAdvice ? advisory.riskLevel : state.tone}>{officialAdvice ? riskLabel(advisory.riskLevel) : state.title}</Badge>

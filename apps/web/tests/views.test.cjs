@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const React = require('react');
 const {renderToStaticMarkup} = require('react-dom/server');
 const {MapFloatingAdvice} = require('../components/map/MapFloatingAdvice.tsx');
+const {MapLegend} = require('../components/map/MapLegend.tsx');
 const {SummarySidebar} = require('../components/layout/SummarySidebar.tsx');
 const {FarmerAdviceCard} = require('../components/farmer/FarmerAdviceCard.tsx');
 const {CurrentWeatherCard} = require('../components/weather/CurrentWeatherCard.tsx');
@@ -59,4 +60,13 @@ test('local demo cards label fixed sample weather and non-actionable reminders',
 test('initial no-API loading cards keep demo identity instead of real-time wording',()=>{
   const previous=process.env.NEXT_PUBLIC_API_BASE_URL;delete process.env.NEXT_PUBLIC_API_BASE_URL;
   try{const state=getWeatherState({loading:true,city:'臺北市'});const html=render(CurrentWeatherCard,{state,loading:true})+render(FarmerAdviceCard,{state,loading:true});assert.match(html,/示範天氣/);assert.match(html,/示範提醒/);assert.doesNotMatch(html,/今日天氣|正在產生建議/);}finally{if(previous===undefined)delete process.env.NEXT_PUBLIC_API_BASE_URL;else process.env.NEXT_PUBLIC_API_BASE_URL=previous;}
+});
+
+test('mobile map floating advice stacks above map legend instead of overlapping at bottom-24', () => {
+  const adviceHtml = render(MapFloatingAdvice, { advisory, crop: '水稻', state: failed });
+  const legendHtml = render(MapLegend, { overlay: 'rain' });
+  assert.match(legendHtml, /\bbottom-24\b/);
+  assert.match(adviceHtml, /\bbottom-48\b/);
+  assert.match(adviceHtml, /\bmd:bottom-20\b/);
+  assert.doesNotMatch(adviceHtml, /\bbottom-24\b/);
 });
